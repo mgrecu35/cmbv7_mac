@@ -1,0 +1,4 @@
+export TKIO=/PANFS/user/home/tkio/
+export HDF5_LIB=/Users/mgrecu/miniconda3/lib
+export HDF5_INC=/Users/mgrecu/miniconda3/include
+export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:${HDF5_LIB}
