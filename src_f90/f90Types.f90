@@ -1,8 +1,14 @@
 
 module f90Types
-   
-  type stormStructType
-     integer,dimension(:),pointer :: nodes     
+  use iso_c_binding
+  integer :: nbins,nEnsM,nc
+  parameter(nbins=88)
+  parameter(nEnsM=50)
+  parameter(nmfreq_=8)
+  parameter(nc=50)
+ 
+  type,bind(c) :: stormStructType
+     integer(c_int) :: nodes (5)    
      ! 5 nodes that define the storm structure 
      ! for stratiform, with BB, nodes[0] is the storm top, 
      ! nodes[1] is the BB top,
@@ -13,70 +19,70 @@ module f90Types
      ! for convective, nodes[3] is not used
      ! the C convention is used the gates are 
      ! numbered from 0 to ngates-1
-     integer   ::  iSurf      ! surface gate number
-     real      ::  freezH     ! freezing height - not used
-     integer   ::  rainType;  ! rainType -1 stratiform
+     integer(c_int)   ::  iSurf      ! surface gate number
+     real(c_float)    ::  freezH     ! freezing height - not used
+     integer(c_int)   ::  rainType;  ! rainType -1 stratiform
   end type stormStructType
 
-  type radarDataType
-     integer                    :: ngates     ! number of gates
-     real,dimension(:),pointer  :: z13obs     ! observed Ku-reflectivities
-     real,dimension(:),pointer  :: z35obs     ! observed Ka-reflectivities
-     real                       :: xlong      ! longitude -not used
-     real                       :: xlat       ! latitude -not used
-     real                       :: pia13srt   ! Ku-band SRT PIA 
-     real                       :: relPia13srt   ! Ku-band SRT PIA 
-     real                       :: pia35srt   ! Ka-band SRT PIA
-     real                       :: relPia35srt   ! Ka-band SRT PIA
-     real                       :: dr         ! gate size
-     real,dimension(:),pointer  :: hh;        ! hh[i] is the height of gate [i]
-     real                       :: hfreez
-     real			:: sigmaZeroKu
-     real			:: sigmaZeroKa
+  type,bind(c):: radarDataType
+     integer(c_int)                    :: ngates     ! number of gates
+     real(c_float)  :: z13obs(nbins)     ! observed Ku-reflectivities
+     real(c_float)  :: z35obs(nbins)     ! observed Ka-reflectivities
+     real(c_float)                       :: xlong      ! longitude -not used
+     real(c_float)                       :: xlat       ! latitude -not used
+     real(c_float)                       :: pia13srt   ! Ku-band SRT PIA 
+     real(c_float)                       :: relPia13srt   ! Ku-band SRT PIA 
+     real(c_float)                       :: pia35srt   ! Ka-band SRT PIA
+     real(c_float)                       :: relPia35srt   ! Ka-band SRT PIA
+     real(c_float)                       :: dr         ! gate size
+     real(c_float)  :: hh(nbins);        ! hh[i] is the height of gate [i]
+     real(c_float)                       :: hfreez
+     real(c_float)			:: sigmaZeroKu
+     real(c_float)			:: sigmaZeroKa
   end type radarDataType
 
-  type  radarRetType
+  type,bind(c)::  radarRetType
     
-     integer   ::  ngates     ! number of gates
-     integer   ::  nMemb      ! number of members
-     integer   ::  nmfreq     ! # of simulated passive microwave frequencies
-     real,dimension(:),pointer :: z13c        ! effective reflectivity 
+     integer(c_int)   ::  ngates     ! number of gates
+     integer(c_int)   ::  nMemb      ! number of members
+     integer(c_int)   ::  nmfreq     ! # of simulated passive microwave frequencies
+     real(c_float) :: z13c(nbins*nEnsM)        ! effective reflectivity 
                                               ! (attenuation corrected)
                                               ! at Ku-band
-     real,dimension(:),pointer :: z35mod0     ! simulated observations at Ka-band
+     real(c_float) :: z35mod0(nbins*nEnsM)     ! simulated observations at Ka-band
 !  SFM  begin  06/16/2014; for M. Grecu, multiple scattering
-     real,dimension(:),pointer :: dz35ms      !  multiple scattering effect
+     real(c_float) :: dz35ms(nbins*nEnsM)      !  multiple scattering effect
 !  SFM  end    06/16/2014
-     real,dimension(:),pointer :: z35         ! simulated observations at Ka-band
-     real,dimension(:),pointer :: pwc         ! precipitation water content 
+     real(c_float) :: z35(nbins*nEnsM)         ! simulated observations at Ka-band
+     real(c_float) :: pwc(nbins*nEnsM)         ! precipitation water content 
                                               ! (g/m3) 
-     real,dimension(:),pointer :: rrate       ! rain rate (mm/h)
-     real,dimension(:),pointer :: d0          ! median diameter (mm)
-     real,dimension(:),pointer :: log10dNw    !
-     real,dimension(:),pointer :: tb          ! simulated brightness temperatures
-     real,dimension(:),pointer :: emTb          ! simulated brightness temperatures
-     real,dimension(:),pointer :: emis          ! emissivity
-     integer,dimension(:),pointer  ::  imu    ! mu index of the look up table
-     integer,dimension(:),pointer  ::  iwc    
-     integer,dimension(:),pointer  ::  icc        
+     real(c_float) :: rrate(nbins*nEnsM)       ! rain rate (mm/h)
+     real(c_float) :: d0(nbins*nEnsM)          ! median diameter (mm)
+     real(c_float) :: log10dNw(nbins*nEnsM)    !
+     real(c_float) :: tb(nmfreq_*2*nEnsM)          ! simulated brightness temperatures
+     real(c_float) :: emTb(nmfreq_*2*nEnsM)          ! simulated brightness temperatures
+     real(c_float) :: emis(nmfreq_*2*nEnsM)          ! emissivity
+     integer(c_int)  ::  imu(nbins*nEnsM)    ! mu index of the look up table
+     integer(c_int)  ::  iwc(nc)    
+     integer(c_int)  ::  icc(nc)        
                                               ! index of RH profile (from 1 to nc)
                                               ! nc is the number of possible 
                                               ! RH profiles see cloud.f90
-     integer,dimension(:),pointer   ::  jcc       
+     integer(c_int)   ::  jcc(nc)       
                                               ! index of cloud profile (from 1 to nc)
-     real,dimension(:),pointer      ::  sfc_wind, sfc_windU, sfc_windV   
-                                              ! surface wind speed
-     real, dimension(:),pointer     ::  pia13
-     real, dimension(:),pointer     ::  pia35
-     real, dimension(:),pointer     ::  simSigmaZeroKu
-     real, dimension(:),pointer     ::  simSigmaZeroKa
-     real, dimension(:),pointer     ::  z35mMean
-     real, dimension(:),pointer     ::  z35mSig
-     real                           ::  pia13mMean, pia35mMean, pia13mSig, pia35mSig
-     integer                        ::  ntpw
-     real, dimension(:),pointer     ::  tpw
-     real, dimension(:),pointer     ::  tpwCldMod
-     real, dimension(:),pointer     ::  logdNw
+     real(c_float)      ::  sfc_wind(nEnsM), sfc_windU(nEnsM), sfc_windV(nEnsM)   
+  
+     real(c_float)     ::  pia13(nEnsM)
+     real(c_float)     ::  pia35(nEnsM)
+     real(c_float)     ::  simSigmaZeroKu(nEnsM)
+     real(c_float)     ::  simSigmaZeroKa(nEnsM)
+     real(c_float)     ::  z35mMean(nbins)
+     real(c_float)     ::  z35mSig(nbins)
+     real(c_float)                           ::  pia13mMean(nEnsM), pia35mMean(nEnsM), pia13mSig(nEnsM), pia35mSig(nEnsM)
+     integer(c_int)    ::  ntpw
+     real(c_float)     ::  tpw(300)
+     real(c_float)     ::  tpwCldMod(nc)
+     real(c_float)     ::  logdNw(9*nEnsM)
                                              ! the last four variables are not retrieved
                                              ! they are randomly set and 
                                              ! specify the conditions 

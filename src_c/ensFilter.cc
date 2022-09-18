@@ -306,7 +306,7 @@ extern "C" void setrandclass_(radarRetType *radarRet, int *nmu)
 
   int i ;
   double imu, icc, jcc ;
-
+  // printf("%i \n",radarRet->nMemb);
   for(i=0;i<radarRet->nMemb;i++)
     {
       imu=(ran1()*(*nmu-0.5))+1;
@@ -601,11 +601,12 @@ extern "C" void ensradretstcvku_( radarDataType   *radarData,
     radarData->hh[i]=(nbins-i)*radarData->dr*cos(*localZAngle/180.*3.1415);
   //nodeP[4]+=1;
   float nstdA=0.125;
+  // printf("before runEns");
   runEns(radarData, stormStruct,retParam, nmu,radarRet, 
 	 xscalev, randemiss, localZAngle, wfractPix, ichunk, 
 	 xs, logdNw,kext,asym,salb,rsurf,dz, imuv, nodeP, 
 	 nNodes,nstdA);
-
+  //  printf("but not after\n");
   float dm=0,rsfcMean;
   for( imemb=0;imemb<radarRet->nMemb;imemb++)
     {

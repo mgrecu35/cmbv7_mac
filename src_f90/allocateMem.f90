@@ -315,33 +315,33 @@ subroutine allocateDPRProfRet(this,nmfreq,nmemb,ngates, nNodes)
   this%nmemb=nmemb
   this%ngates=ngates
   this%nmfreq=nmfreq
-  allocate(this%z13c(nmemb*ngates))
-  allocate(this%z35mod0(nmemb*ngates))
+!  allocate(this%z13c(nmemb*ngates))
+!  allocate(this%z35mod0(nmemb*ngates))
 !  SFM  begin  06/16/2014; for M. Grecu, multiple scattering
-  allocate(this%dz35ms(nmemb*ngates))
+!  allocate(this%dz35ms(nmemb*ngates))
 !  SFM  end    06/16/2014
-  allocate(this%z35(nmemb*ngates))
-  allocate(this%pwc(nmemb*ngates))
-  allocate(this%rrate(nmemb*ngates))
-  allocate(this%d0(nmemb*ngates))
-  allocate(this%log10dNw(nmemb*ngates))
-  allocate(this%logdNw(nmemb*nNodes))
-  allocate(this%tb(nmemb*2*nmfreq))
-  allocate(this%emtb(nmemb*2*nmfreq))
-  allocate(this%emis(nmemb*2*nmfreq))
-  allocate(this%imu(nmemb))
-  allocate(this%icc(nmemb))
-  allocate(this%jcc(nmemb))
-  allocate(this%sfc_wind(nmemb))
-  allocate(this%sfc_windU(nmemb))
-  allocate(this%sfc_windV(nmemb))
-  allocate(this%pia13(nmemb))
-  allocate(this%pia35(nmemb))
-  allocate(this%simSigmaZeroKu(nmemb)) !SJM 12/3/2014
-  allocate(this%simSigmaZeroKa(nmemb)) !SJM 12/3/2014
-  allocate(this%z35mMean(ngates))
-  allocate(this%z35mSig(ngates))
-  allocate(this%tpwCldMod(nc))
+!  allocate(this%z35(nmemb*ngates))
+!  allocate(this%pwc(nmemb*ngates))
+!  allocate(this%rrate(nmemb*ngates))
+!  allocate(this%d0(nmemb*ngates))
+!  allocate(this%log10dNw(nmemb*ngates))
+!  allocate(this%logdNw(nmemb*nNodes))
+!  allocate(this%tb(nmemb*2*nmfreq))
+!  allocate(this%emtb(nmemb*2*nmfreq))
+!  allocate(this%emis(nmemb*2*nmfreq))
+!  allocate(this%imu(nmemb))
+!  allocate(this%icc(nmemb))
+!  allocate(this%jcc(nmemb))
+!  allocate(this%sfc_wind(nmemb))
+!  allocate(this%sfc_windU(nmemb))
+!  allocate(this%sfc_windV(nmemb))
+!  allocate(this%pia13(nmemb))
+!  allocate(this%pia35(nmemb))
+!  allocate(this%simSigmaZeroKu(nmemb)) !SJM 12/3/2014
+!  allocate(this%simSigmaZeroKa(nmemb)) !SJM 12/3/2014
+!  allocate(this%z35mMean(ngates))
+!  allocate(this%z35mSig(ngates))
+!  allocate(this%tpwCldMod(nc))
 end subroutine allocateDPRProfRet
 
 subroutine allocateDPRProfData(this, ngates)
@@ -349,9 +349,10 @@ subroutine allocateDPRProfData(this, ngates)
   implicit none
   integer :: ngates
   type (radarDataType) :: this
-  allocate(this%z13obs(ngates))
-  allocate(this%z35obs(ngates))
-  allocate(this%hh(ngates))
+  print*, 'here no allocation'
+!  allocate(this%z13obs(ngates))
+!  allocate(this%z35obs(ngates))
+!  allocate(this%hh(ngates))
   this%ngates=ngates
 end subroutine allocateDPRProfData
 
@@ -359,15 +360,15 @@ subroutine deallocateDPRProfData(this)
   use f90Types
   implicit none
   type (radarDataType) :: this
-  deallocate(this%z13obs)
-  deallocate(this%z35obs)
-  deallocate(this%hh)
+ ! deallocate(this%z13obs)
+ ! deallocate(this%z35obs)
+ ! deallocate(this%hh)
 end subroutine deallocateDPRProfData
 
 subroutine allocateStormStructData(this)
   use f90Types
   type (stormStructType) :: this
-  allocate(this%nodes(5))
+  !allocate(this%nodes(5))
 end subroutine allocateStormStructData
  
 subroutine deallocateDPRRetSpace(this)
@@ -445,38 +446,38 @@ subroutine deallocateDPRProfRet(this)
   !print*, nmemb, ngates
 
 
-  deallocate(this%z13c)
-  deallocate(this%z35mod0)
+!  deallocate(this%z13c)
+!  deallocate(this%z35mod0)
 !  SFM  begin  06/16/2014; for M. Grecu, multiple scattering
-  deallocate(this%dz35ms)
+!  deallocate(this%dz35ms)
 !  SFM  end    06/16/2014
-  deallocate(this%z35)
-  deallocate(this%pwc)
-  deallocate(this%rrate)
-  deallocate(this%d0)
-  deallocate(this%log10dNw)
-  deallocate(this%logdNw)
-  deallocate(this%tb)
-  deallocate(this%emtb)
-  deallocate(this%emis)
-  deallocate(this%imu)
-  deallocate(this%icc)
-  deallocate(this%jcc)
-  deallocate(this%sfc_wind,this%sfc_windU, this%sfc_windV)
-  deallocate(this%pia13)
-  deallocate(this%pia35)
-  deallocate(this%simSigmaZeroKu) !SJM 12/3/2014
-  deallocate(this%simSigmaZeroKa) !SJM 12/3/2014
-  deallocate(this%z35mMean)
-  deallocate(this%z35mSig)
-  deallocate(this%tpwCldMod)
+!  deallocate(this%z35)
+!  deallocate(this%pwc)
+!  deallocate(this%rrate)
+!  deallocate(this%d0)
+!  deallocate(this%log10dNw)
+!  deallocate(this%logdNw)
+!  deallocate(this%tb)
+!  deallocate(this%emtb)
+!  deallocate(this%emis)
+!  deallocate(this%imu)
+!  deallocate(this%icc)
+!  deallocate(this%jcc)
+!  deallocate(this%sfc_wind,this%sfc_windU, this%sfc_windV)
+!  deallocate(this%pia13)
+!  deallocate(this%pia35)
+!  deallocate(this%simSigmaZeroKu) !SJM 12/3/2014
+!  deallocate(this%simSigmaZeroKa) !SJM 12/3/2014
+!  deallocate(this%z35mMean)
+!  deallocate(this%z35mSig)
+!  deallocate(this%tpwCldMod)
 end subroutine deallocateDPRProfRet
 
 
 subroutine deallocateStormStructData(this)
   use f90Types
   type (stormStructType) :: this
-  deallocate(this%nodes)
+!  deallocate(this%nodes)
 end subroutine deallocateStormStructData
 
 

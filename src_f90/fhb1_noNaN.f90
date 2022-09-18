@@ -70,27 +70,32 @@ subroutine fhb11(z13,z35,z13obs,&
   iNoAd=0
 !  print*, node
 !  write(*,*) z13obs(node(1):node(5))
-!  stop
+  !  stop
+  cld_extMemb=0
   call interpolPC(imembC+1, rhPCij, cldwPCij, cldw, rh)
   iEx=0
-
+  !print*, cld_extMemb
+  !print*, temp
   do i=1,nlayer
      j=rh(i)/2.
      if(j<=0) j=1
      if(j>50) j=1
-     wv_extMemb(i)=atm_extKag(i,j)
-     tavg=(temp(i)+temp(i-1))*0.5
+     wv_extMemb(i)=0!atm_extKag(i,j)
+     tavg=273!(temp(i)+temp(i-1))*0.5
      if(cldw(i)<0) cldw(i)=0
      call gcloud(35.,tavg,0.1*cldw(i),cld_extMemb(i))
      if(imembc+1==11) then
        ! write(*,*) cldw(i), rh(i), tavg,  cld_extMemb(i), wv_extMemb(i)
      endif
   enddo
+  !print*, 'got here'
   !if(imembc+1==1) stop
   it=0
 10 continue
   z13=z13obs
   !print*, node
+  !print*, z13obs
+  !stop
   j=0
   rms=1e5
   !if(itype==1 .and. imembc==1) then
@@ -113,6 +118,8 @@ subroutine fhb11(z13,z35,z13obs,&
         dz2=maxval(z13obs(node(2):node(4)))-z13obs(node(4))
      endif
   endif
+  !print*,itype
+  !print*, imu,dr
   !if(itype==1) itype=11
   if(node(1)<node(3)) then
      do i=max(node(1)-5,1),node(1)
@@ -134,6 +141,7 @@ subroutine fhb11(z13,z35,z13obs,&
         !print*, log10dnw(node(1):node(5))
      endif
   endif
+  !print*, log10dnw
   do while(rms>1e-5 .and. j <40)
      j=j+1
      pia13=0

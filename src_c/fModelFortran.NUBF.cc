@@ -279,11 +279,13 @@ float *log10dN   : vector, returns retrieved log10(N0/N0ref)
 	    z13obsP[j]=50;
 //  SFM  end    06/22/2014
 	}
+      //printf("before fhb11\n");
       fhb11_(z13,z35,z13obsP,
 	     pia13M,pia35M,&ic,&jc,z35mod,pwc,log10dN, 
 	     &dr,node,&isurf,imuv,
 	     &ngates,&nmfreq,hh,&itype,kext,salb,asym,
 	     rrate,d0,hfreez, pia13srt,imemb);
+      //printf("but not after\n");
 //  SFM  begin  07/29/2014; for M.Grecu  to eliminate NANs
       if(isnan(*pia35M))
 	{

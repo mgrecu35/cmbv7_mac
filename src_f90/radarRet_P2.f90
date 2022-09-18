@@ -393,22 +393,26 @@ subroutine radarRetSub2(nmu2,  nmfreq2,   icL, tbRgrid,               &
   mu_mean = missing_r4
   mu_meanMS = missing_r4
 !end    WSO 8/19/13
-!end    WSO 9/15/13
-  print*, nmfreq2
-  call allocateDPRProfRet(radarRet,nmfreq2,nmemb1,ngates, 9)   ! allocates memory for the 1D 
+  !end    WSO 9/15/13
   
+  print*, nmfreq2
+  print*, nmemb1, ngates
+  call allocateDPRProfRet(radarRet,nmfreq2,nmemb1,ngates, 9)   ! allocates memory for the 1D 
+  print*, 'after allocate DPR'
   !...retrieval structures
   radarRet%rrate = 0.0  
-
+  print*, 'radar assign'
   radarRet%tb=-99
 
   call allocateDPRProfData(radarData, ngates)                 ! allocates memory for the 
-                                                              ! 1-D DPR observations
+  print*, 'affter DPRPRofData'                               ! 1-D DPR observations
   call allocateStormStructData(stormStruct)                   ! allocates memory for the 5-node 
-                                                              ! storm structure
+  print*, 'C allocation'                                                            ! storm structure
   call setRetParam(retParam)
+  print*, 'setRetParam'
   call setrandclass(radarRet, nmu2)
-  
+  print*, 'setRand'
+  print*, 'after allocate'
   dPRRet%sfc_wind(1:nmemb)=radarRet%sfc_wind(1:nmemb)
   
   dPRRet%sfcRainEns=0
@@ -420,6 +424,7 @@ subroutine radarRetSub2(nmu2,  nmfreq2,   icL, tbRgrid,               &
   dPRRet%emis=-99
   dPRRet%n9=0
   call allocGeophys(6,61,9,nmemb1,nmfreq2*nmemb1*2)
+  
   call setdNwIcJcL(sysdN,nmemb1)
   nx=30+nbin*7
 !begin  MG 9/18/13 changed 110 to 130
@@ -513,7 +518,7 @@ subroutine radarRetSub2(nmu2,  nmfreq2,   icL, tbRgrid,               &
         call getwfraction(eLat,&
              eLon,wfmap(i,j))
         wfmap(i,j)=wfmap(i,j)/100.
-        
+        !print*, 'here in the loop'      
         !begin  WSO 8/21/14 initialize ioquality flag to bad
         dPRData%ioqualityflagku(i, j) = dPRData%ioqualityflagku(i,j) + 900000
         if(i > 12 .and. i < 38) then
@@ -685,6 +690,7 @@ subroutine radarRetSub2(nmu2,  nmfreq2,   icL, tbRgrid,               &
               !w10(i,j)=0.5*(radarRet%sfc_wind(1)+dPRData%envSfcWind(i,j))
               
               if(dPRData%rainType(i,j)/100>=1) then
+
                  do ibatch=1,1
                     eLon=dPRData%xlon(i,j)
                     eLat=dPRData%xlat(i,j)
@@ -731,252 +737,13 @@ subroutine radarRetSub2(nmu2,  nmfreq2,   icL, tbRgrid,               &
                     enddo
                     
                     
-                    !radarRet%sfc_wind(1:nmemb1)=&
-                    !    2*windPert(1:nmemb1)
-                    
-                    
-                    
-                    
-                    !begin SJM 10/16/15
-                    !print*, dPRData%snowIceCover(i,j)
-                    jj=2880-floor((elat+90.)/180.*2880.)
-                    if(jj .lt. 1) jj=1
-                    if(jj .gt. 2880) jj = 2880
-                    ii=floor((elon+180.)/360.*5760.)+1
-                    if(ii .lt. 1) ii = 1
-                    if(ii .gt. 5760) ii = 5760
-                    !print*, elat,elon,ii,jj
-                    if(dPRData%snowIceCover(i,j) .eq. 0) then
-                       stype = LUT%land_class_map_bare(ii,jj) !SJM 9/9/15
-                    else
-                       stype = LUT%land_class_map_snow(ii,jj) !SJM 9/9/15
-                    endif
-                    !print*, eLon, eLat, stype
-                    !begin SJM 12/9/2014
-                    !Determine emissivity and surface backscatter here. Surface classification will be as follows:
-                    !If stype=1 (GPROF water class), use water
-                    !If stype=2 (GPROF sea ice), use sea ice
-                    !For all other stype values, if wfract is greater than 50, use a weighted mix of the stype class and water
-                    !If wfract is < 50, just use the stype class as is.
-                    !Perturb wind in all pixels
-                    w10_min = 9999.9
-                    w10_max = -9999.9
-                    do ii=max(1,i-25),min(49,i+25)
-                       do jj=max(1,j-25),min(dPRdata%n1c21,j+25)
-                          if((ii-i)**2+(jj-j)**2 .gt. 25**2) cycle
-                          if(dPRData%envsfcWind(ii,jj) .ge. 0. .and. dPRData%envsfcWind(ii,jj) .lt. w10_min) w10_min = dPRData%envsfcWind(ii,jj)
-                          if(dPRData%envsfcWind(ii,jj) .ge. 0. .and. dPRData%envsfcWind(ii,jj) .gt. w10_max) w10_max = dPRData%envsfcWind(ii,jj)
-                       end do
-                    end do
-                    !radarRet%sfc_wind(1:nmemb1)=dPRData%envsfcWind(i,j)+max(12.5,w10_max-w10_min,dPRData%envsfcWind(i,j))*windPertU(1:nmemb1)
-                    radarRet%sfc_windU(1:nmemb)=dprData%envSfcWindU(i,j)+max(12.5,w10_max-w10_min,dPRData%envsfcWind(i,j))*windPertU(1:nmemb1)
-                    !radarRet%sfc_windU(1:nmemb)=7.5+25.*windPertU(1:nmemb1)
-                    radarRet%sfc_windV(1:nmemb)=dprData%envSfcWindV(i,j)+max(12.5,w10_max-w10_min,dPRData%envsfcWind(i,j))*windPertV(1:nmemb1)
-                    !radarRet%sfc_windV(1:nmemb)=0.+25.*windPertV(1:nmemb1)
-                    !where(radarRet%sfc_wind .lt. 0.) radarRet%sfc_wind = 0.
-                    !calculate TPW to choose land class EOFS (8 or 10-channel)
-                    tpw_ij=0.
-                    if(dprData%binRealSurface(i,j)>88) then
-                       print*, dprData%binRealSurface(i,j), i, j
-                       stop
-                    end if
-                    do k = 1, dprData%binRealSurface(i,j)
-                       !there are many approximations in this calc but for purposes of choosing 8- or 10-channel EOFs it is ok
-                       if(dprData%envQv(k,i,j) .gt. 0.) tpw_ij=tpw_ij+250.*100.*dprData%EnvPress(k,i,j)/(dprData%EnvTemp(k,i,j)*(461.5+286.9/(0.001*dprData%envQv(k,i,j))))
-                    end do
-                    
-                    if(stype .eq. 1) then
-                       do k=0,nmemb1-1
-                          radarRet%sfc_wind(k+1) = sqrt(radarRet%sfc_windU(k+1)**2+radarRet%sfc_windV(k+1)**2)
-                          call calc_relAz(DPRData%sclon(j), DPRData%sclat(j), elon, elat, radarRet%sfc_windU(k+1), radarRet%sfc_windV(k+1), relAz)
-                          !relAz=0.
-                          !print*, radarRet%sfc_windU(k+1), radarRet%sfc_windV(k+1), relAz
-                          call intplte_water_sigma0(i,radarRet%sfc_wind(k+1),relAz,s0Ku, s0Ka, s0stdKu, s0stdKa, s0corr)
-                          ds0Ku = normal2(0.,1.)
-                          ds0Ka = (s0corr**2)*ds0Ku+(1.-s0corr**2)*normal2(0.,1.)
-                          ds0Ku = ds0Ku*s0stdKu
-                          if(s0Ka .ne. -99.) ds0Ka = ds0Ka*s0stdKa
-                          !print*, i, k, radarRet%sfc_wind(k),s0Ku, s0Ka
-                          !add (correlated) noise to obs
-                          radarRet%simSigmaZeroKu(k+1) = s0Ku+ds0Ku!-radarRet%pia13(k)!+ds0Ku
-                          if(s0Ka .ne. -99.) then
-                             radarRet%simSigmaZeroKa(k+1) = s0Ka+ds0Ka!-radarRet%pia35(k)!+ds0Ka !need to add multiple scattering contribution as well
-                          else
-                             radarRet%simSigmaZeroKa(k+1) = -99.
-                          endif
-                          sigmaZeroVarKu(i,j) = s0stdKu**2
-                          if(s0Ka .ne. -99.) sigmaZeroVarKa(i,j) = s0stdKa**2
-                          if(s0Ka .ne. -99.) sigmaZeroCov(i,j) = s0corr*s0stdKu*s0stdKa
-                          call calc_relAz(scLonPR(i,j), scLatPR(i,j), elon, elat, radarRet%sfc_windU(k+1), radarRet%sfc_windV(k+1), relAz)
-                          !relAz=0.
-                          !print*, i,j,radarRet%sfc_wind(k+1), '1'
-                          
-                          do ii=1,5
-                             call intplte_emis(ii,0,dPRData%envSfcTemp(i,j),radarRet%sfc_wind(k+1),relAz,S1eiaPR(i,j),emis,ebar)
-                             emissv(ii)=emis
-                             call intplte_emis(ii,1,dPRData%envSfcTemp(i,j),radarRet%sfc_wind(k+1),relAz,S1eiaPR(i,j),emis,ebar)
-                             emissh(ii)=emis
-                          end do
-                          
-                          do ii=6,6
-                             call intplte_emis(ii,0,dPRData%envSfcTemp(i,j),radarRet%sfc_wind(k+1),relAz,S2eiaPR(i,j),emis,ebar)
-                             emissv(ii)=emis
-                             call intplte_emis(ii,1,dPRData%envSfcTemp(i,j),radarRet%sfc_wind(k+1),relAz,S2eiaPR(i,j),emis,ebar)
-                             emissh(ii)=emis
-                          end do
-                          !print '(15F8.3)', relAz,S1eiaPR(i,j),S2eiaPR(i,j), emissv, emissh
-                          radarRet%emis(k*2*nmfreq2+1) = emissv(1)
-                          radarRet%emis(k*2*nmfreq2+2) = emissh(1)
-                          radarRet%emis(k*2*nmfreq2+3) = emissv(2)
-                          radarRet%emis(k*2*nmfreq2+4) = emissh(2)
-                          radarRet%emis(k*2*nmfreq2+5) = emissv(3)
-                          radarRet%emis(k*2*nmfreq2+6) = emissv(4)
-                          radarRet%emis(k*2*nmfreq2+7) = emissh(4)
-                          radarRet%emis(k*2*nmfreq2+8) = emissv(5)
-                          radarRet%emis(k*2*nmfreq2+9) = emissh(5)
-                          radarRet%emis(k*2*nmfreq2+10) = emissv(6)
-                          radarRet%emis(k*2*nmfreq2+11) = emissh(6)
-                          radarRet%emis(k*2*nmfreq2+12:k*2*nmfreq2+16) = radarRet%emis(k*2*nmfreq2+10)
-                          !print '(I3,14F8.3,2F8.2)', k, radarRet%sfc_wind(k+1), radarRet%emis(k*2*nmfreq+1:k*2*nmfreq+13), radarRet%simSigmaZeroKu(k+1), radarRet%simSigmaZeroKa(k+1)
-                       end do
-                       
-                       
-                       !if(max(w10_max-w10_min,dPRData%envsfcWind(i,j)) .ge. 10.) radarRet%sfc_wind(1:nmemb1)=dPRData%envsfcWind(i,j)+max(w10_max-w10_min,dPRData%envsfcWind(i,j))*windPert(1:nmemb1)
-                    else 
-                       
-                       call getemiss(elat,elon,dPRData%snowIceCover(i,j),emissv,emissh,emissv_std,emissh_std)
-                       !print '(2F8.2,I5, 12F8.3)', elat, elon, stype, emissv, emissh
-                       !stop
-                       !call get_s0(elat,elon,i,stype,s0Ku,s0Ka, s0stdKu, s0stdKa)
-                       !alternative: get reference sigma_zero from observed sigma_zero +srt PIA
-                       s0Ku = DPRData%sigmaZeroKu(i,j)+DPRData%srtPIAKu(i,j)
-                       s0stdKu = DPRData%srtsigmaPIAKu(i,j)
-                       s0Ka = DPRData%sigmaZeroKa(i,j)+DPRData%dsrtPIAKa(i,j)
-                       s0stdKa = DPRData%dsrtsigmaPIAKa(i,j)
-                       !print '(2F8.2,I5,11F8.2)', elat, elon, stype, s0Ku, s0stdKu,LUT%land_class_sigma0Ku_std(stype-1,i), DPRData%sigmaZeroKu(i,j),DPRData%srtsigmaPIAKu(i,j),DPRData%dsrtsigmaPIAKu(i,j), s0Ka, s0stdKa, DPRData%sigmaZeroKa(i,j),DPRData%dsrtsigmaPIAKa(i,j),LUT%land_class_sigma0Ka_std(stype-1,i)
-                       !reset PIA for forward model
-                       !radarData%pia13srt = s0Ku-DPRData%sigmaZeroKu(i,j)
-                       !radarData%pia35srt = s0Ka-DPRData%sigmaZeroKa(i,j)
-                       sigmaZeroVarKu(i,j) = s0stdKu**2
-                       sigmaZeroVarKa(i,j) = s0stdKa**2
-                       sigmaZeroCov(i,j) = 0.5*s0stdKu*s0stdKa !need to replace w/ actual correlation; this is a conservative value
-                       !use same sfc reference as DPR
-                       !if(dPRData%snrRatioku(i, j) > 2.) s0Ku = dPRData%sigmaZeroKu(i,j)+dPRData%srtPIAKu(i,j)
-                       !if(dPRData%snrRatioka(i, j) > 2.) s0Ka = dPRData%sigmaZeroKa(i,j)+dPRData%dsrtPIAKa(i,j)
-                       !Set ensemble emissivities
-                       do k=0,nmemb1-1
-                          radarRet%emis(k*2*nmfreq2+1) = emissv(1)
-                          radarRet%emis(k*2*nmfreq2+2) = emissh(1)
-                          radarRet%emis(k*2*nmfreq2+3) = emissv(2)
-                          radarRet%emis(k*2*nmfreq2+4) = emissh(2)
-                          radarRet%emis(k*2*nmfreq2+6) = emissv(4)
-                          radarRet%emis(k*2*nmfreq2+7) = emissh(4)
-                          radarRet%emis(k*2*nmfreq2+8) = emissv(5)
-                          radarRet%emis(k*2*nmfreq2+9) = emissh(5)
-                          radarRet%emis(k*2*nmfreq2+10) = emissv(6)
-                          radarRet%emis(k*2*nmfreq2+11) = emissh(6)
-                          radarRet%simSigmaZeroKu(k+1) = s0Ku
-                          radarRet%simSigmaZeroKa(k+1) = s0Ka
-                          if(tpw_ij .gt. 10.) then
-                             do ii = 1,10
-                                radarRet%emis(k*2*nmfreq2+1) = radarRet%emis(k*2*nmfreq2+1) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,1)
-                                radarRet%emis(k*2*nmfreq2+2) = radarRet%emis(k*2*nmfreq2+2) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,2)
-                                radarRet%emis(k*2*nmfreq2+3) = radarRet%emis(k*2*nmfreq2+3) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,3)
-                                radarRet%emis(k*2*nmfreq2+4) = radarRet%emis(k*2*nmfreq2+4) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,4)
-                                radarRet%emis(k*2*nmfreq2+6) = radarRet%emis(k*2*nmfreq2+6) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,5)
-                                radarRet%emis(k*2*nmfreq2+7) = radarRet%emis(k*2*nmfreq2+7) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,6)
-                                radarRet%emis(k*2*nmfreq2+8) = radarRet%emis(k*2*nmfreq2+8) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,7)
-                                radarRet%emis(k*2*nmfreq2+9) = radarRet%emis(k*2*nmfreq2+9) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,8)
-                                !radarRet%emis(k*2*nmfreq2+10) = radarRet%emis(k*2*nmfreq2+10) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,9)
-                                !radarRet%emis(k*2*nmfreq2+11) = radarRet%emis(k*2*nmfreq2+11) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,10)
-                                radarRet%simSigmaZeroKu(k+1) = radarRet%simSigmaZeroKu(k+1)+emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,10+i)*s0stdKu/LUT%land_class_sigma0Ku_std(stype-1,i)
-                                radarRet%simSigmaZeroKa(k+1) = radarRet%simSigmaZeroKa(k+1)+emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_LF(stype-1,ii,10+49+i)*s0stdKa/LUT%land_class_sigma0Ka_std(stype-1,i)
-                                !print*, emis_eofs(k+1,ii), LUT%land_class_emis_eofs_NS(stype,ii,1)
-                             end do
-                          else
-                             do ii = 1,12
-                                radarRet%emis(k*2*nmfreq2+1) = radarRet%emis(k*2*nmfreq2+1) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,1)
-                                radarRet%emis(k*2*nmfreq2+2) = radarRet%emis(k*2*nmfreq2+2) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,2)
-                                radarRet%emis(k*2*nmfreq2+3) = radarRet%emis(k*2*nmfreq2+3) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,3)
-                                radarRet%emis(k*2*nmfreq2+4) = radarRet%emis(k*2*nmfreq2+4) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,4)
-                                radarRet%emis(k*2*nmfreq2+6) = radarRet%emis(k*2*nmfreq2+6) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,5)
-                                radarRet%emis(k*2*nmfreq2+7) = radarRet%emis(k*2*nmfreq2+7) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,6)
-                                radarRet%emis(k*2*nmfreq2+8) = radarRet%emis(k*2*nmfreq2+8) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,7)
-                                radarRet%emis(k*2*nmfreq2+9) = radarRet%emis(k*2*nmfreq2+9) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,8)
-                                radarRet%emis(k*2*nmfreq2+10) = radarRet%emis(k*2*nmfreq2+10) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,9)
-                                radarRet%emis(k*2*nmfreq2+11) = radarRet%emis(k*2*nmfreq2+11) + emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,10)
-                                radarRet%simSigmaZeroKu(k+1) = radarRet%simSigmaZeroKu(k+1)+emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,10+i)*s0stdKu/LUT%land_class_sigma0Ku_std(stype-1,i)
-                                radarRet%simSigmaZeroKa(k+1) = radarRet%simSigmaZeroKa(k+1)+emis_eofs(k+1,ii)*LUT%land_class_emis_eofs_AF(stype-1,ii,10+49+i)*s0stdKa/LUT%land_class_sigma0Ka_std(stype-1,i)
-                                !print*, emis_eofs(k+1,ii), LUT%land_class_emis_eofs_NS(stype,ii,1)
-                             end do
-                          endif
-                          radarRet%emis(k*2*nmfreq2+5) = 0.64*radarRet%emis(k*2*nmfreq2+4)+0.36*radarRet%emis(k*2*nmfreq2+6)
-                          radarRet%emis(k*2*nmfreq2+12:k*2*nmfreq2+16) = radarRet%emis(k*2*nmfreq2+10)
-                          !print '(I3,13F8.3,2F8.2)', k, radarRet%emis(k*2*nmfreq+1:k*2*nmfreq+13), radarRet%simSigmaZeroKu(k+1), radarRet%simSigmaZeroKa(k+1)
-                       end do
-                       
-                       !print*, s0Ku, dPRData%sigmaZeroKu(i,j)+dPRData%srtPIAKu(i,j), dPRData%sigmaZeroKa(i,j)+dPRData%dsrtPIAKa(i,j)
-                       if(stype .gt. 2 .and. wfractPix .gt. 1) then
-                          do k=0,nmemb1-1
-                             radarRet%sfc_wind(k+1) = sqrt(radarRet%sfc_windU(k+1)**2+radarRet%sfc_windV(k+1)**2)
-                             !relAz=0.
-                             call calc_relAz(DPRData%sclon(j), DPRData%sclat(j), elon, elat, radarRet%sfc_windU(k+1), radarRet%sfc_windV(k+1), relAz)
-                             call intplte_water_sigma0(i,radarRet%sfc_wind(k+1),relAz,s0Ku, s0Ka, s0stdKu, s0stdKa, s0corr)
-                             ds0Ku = normal2(0.,1.)
-                             ds0Ka = (s0corr**2)*ds0Ku+(1.-s0corr**2)*normal2(0.,1.)
-                             ds0Ku = ds0Ku*s0stdKu
-                             if(s0Ka .ne. -99.) ds0Ka = ds0Ka*s0stdKa
-                             radarRet%simSigmaZeroKu(k+1) = (wfractPix/100.*s0Ku+ds0Ku)+(1.-wfractPix/100.)*radarRet%simSigmaZeroKu(k+1)!-radarRet%pia13(k)!+ds0Ku
-                             radarRet%simSigmaZeroKa(k+1) = (wfractPix/100.*s0Ka+ds0Ka)+(1.-wfractPix/100.)*radarRet%simSigmaZeroKa(k+1)!-radarRet%pia35(k)!+ds0Ka !need to add multiple scattering contribution as well
-                             sigmaZeroVarKu(i,j) = (wfractPix/100.*s0stdKu)+(1.-wfractPix/100.)*sigmaZeroVarKu(i,j)
-                             sigmaZeroVarKa(i,j) = (wfractPix/100.*s0stdKa)+(1.-wfractPix/100.)*sigmaZeroVarKa(i,j)
-                             call calc_relAz(scLonPR(i,j), scLatPR(i,j), elon, elat, radarRet%sfc_windU(k+1), radarRet%sfc_windV(k+1), relAz)
-                             !relAz=0.
-                             !print*, i,j,radarRet%sfc_wind(k+1),'2'
-                             do ii=1,5
-                                call intplte_emis(ii,0,dPRData%envSfcTemp(i,j),radarRet%sfc_wind(k+1),relAz,S1eiaPR(i,j),emis,ebar)
-                                emissv(ii)=emis
-                                call intplte_emis(ii,1,dPRData%envSfcTemp(i,j),radarRet%sfc_wind(k+1),relAz,S1eiaPR(i,j),emis,ebar)
-                                emissh(ii)=emis
-                             end do
-                             do ii=6,6
-                                call intplte_emis(ii,0,dPRData%envSfcTemp(i,j),radarRet%sfc_wind(k+1),relAz,S2eiaPR(i,j),emis,ebar)
-                                emissv(ii)=emis
-                                call intplte_emis(ii,1,dPRData%envSfcTemp(i,j),radarRet%sfc_wind(k+1),relAz,S2eiaPR(i,j),emis,ebar)
-                                emissh(ii)=emis
-                             end do
-                             
-                             radarRet%emis(k*2*nmfreq2+1) = emissv(1)*wfractPix/100.+(1.-wfractPix/100.)*radarRet%emis(k*2*nmfreq2+1)
-                             radarRet%emis(k*2*nmfreq2+2) = emissh(1)*wfractPix/100.+(1.-wfractPix/100.)*radarRet%emis(k*2*nmfreq2+2)
-                             radarRet%emis(k*2*nmfreq2+3) = emissv(2)*wfractPix/100.+(1.-wfractPix/100.)*radarRet%emis(k*2*nmfreq2+3)
-                             radarRet%emis(k*2*nmfreq2+4) = emissh(2)*wfractPix/100.+(1.-wfractPix/100.)*radarRet%emis(k*2*nmfreq2+4)
-                             radarRet%emis(k*2*nmfreq2+5) = emissv(3)*wfractPix/100.+(1.-wfractPix/100.)*radarRet%emis(k*2*nmfreq2+5)
-                             radarRet%emis(k*2*nmfreq2+6) = emissv(4)*wfractPix/100.+(1.-wfractPix/100.)*radarRet%emis(k*2*nmfreq2+6)
-                             radarRet%emis(k*2*nmfreq2+7) = emissh(4)*wfractPix/100.+(1.-wfractPix/100.)*radarRet%emis(k*2*nmfreq2+7)
-                             radarRet%emis(k*2*nmfreq2+8) = emissv(5)*wfractPix/100.+(1.-wfractPix/100.)*radarRet%emis(k*2*nmfreq2+8)
-                             radarRet%emis(k*2*nmfreq2+9) = emissh(5)*wfractPix/100.+(1.-wfractPix/100.)*radarRet%emis(k*2*nmfreq2+9)
-                             radarRet%emis(k*2*nmfreq2+10) = emissv(6)*wfractPix/100.+(1.-wfractPix/100.)*radarRet%emis(k*2*nmfreq2+10)
-                             radarRet%emis(k*2*nmfreq2+11) = emissh(6)*wfractPix/100.+(1.-wfractPix/100.)*radarRet%emis(k*2*nmfreq2+11)
-                          end do
-                       else
-                          radarRet%sfc_wind(1:nmemb1)=dPRData%envsfcWind(i,j) !remove wind perturbations over land
-                       endif
-                       
-                    endif
-                    !end SJM 10/16/15
-                    call setEnv(dPRData%envQv(:,i,j),dPRData%envTemp(:,i,j),&
-                         dPRData%envPress(:,i,j),dPRData%envSfcTemp(i,j),&
-                         dPRData%envSknTemp(i,j))
-                    !begin  MG 10/29/15 assign reliability flag
                     reliabFlag=dPRData%NSRelibFlag(i,j)
-                    !end    MG 10/20/15
-                    
-                    !print*,dPRData%node(:,i,j)
+                    !print*, 'before ens'
                     call  ensRadRetStCvKu(radarData,stormStruct,                  &
                          retParam, nmu2,radarRet, itop, rms1, rms2, sysdN, iit, &
                          xscalev, randemiss, dPRData%localZenithAngle(i,j), &
-                         wfractPix, ichunk, i, j, dZms(i,j), msFlag(i, j)) !! MS&WSO addition Feb 11, 2017
-                    
+                         wfractPix, ichunk, i, j, dZms(i,j), msFlag(i, j)) 
+                    !print*, 'but not here'
                     !begin WSO 2/11/17 assign dZms to output variable
                     multiscatsurface_MS(i, j) = dZms(i, j)
                     multiscatcalc_MS(i, j) = msFlag(i, j)
@@ -986,33 +753,12 @@ subroutine radarRetSub2(nmu2,  nmfreq2,   icL, tbRgrid,               &
                     !generate simulated sigma_zero over water
                     !print*, wfractPix
                     
-                    if(stype .ne. 1) then
-                       call getemiss(elat,elon,dPRData%snowIceCover(i,j),emissv,emissh,emissv_std,emissh_std)
-                       emissoutL(i,j,1:13)=(/emissv(1),emissh(1),&
-                            emissv(2),emissh(2),&
-                            emissv(3),emissv(4),emissh(4),&
-                            emissv(5),emissh(5),emissv(6),emissh(6),emissv(6),emissv(6)/)
-                       if(maxval(emissoutL(i,j,1:13)) .gt. 2.) print'(A6,2I5,13F8.3)', 'EnsRet', i,j,emissoutL(i,j,1:13)
-                    endif
-                    !                  if(j>1 .and. j<dPRData%n1c21 .and. pia35m(i,j)>0.1) then
-                    !                    nubfc= 1./srtpiaf(pia35m(i-1:i+1,j-1:j+1),9)
-                    !                  else
-                    !                    nubfc=1.
-                    !                  endif
-                    !                  print*, i,j, nubfc
-                    do k=0,nmemb1-1
-                       radarRet%simSigmaZeroKu(k+1) = radarRet%simSigmaZeroKu(k+1)-radarRet%pia13(k+1)!+ds0Ku
-                       !if(radarRet%simSigmaZeroKa(k+1) .ne. -99.) radarRet%simSigmaZeroKa(k+1) = radarRet%simSigmaZeroKa(k+1)-radarRet%pia35(k+1)/nubfc!+ds0Ka 
-                       !print '(I3,13F8.3,2F8.2)', k, radarRet%tb(k*2*nmfreq+1:k*2*nmfreq+13), radarRet%simSigmaZeroKu(k+1), radarRet%simSigmaZeroKa(k+1)
-                    end do
-                    !end sjm 10/16/15
+
                     dPRRet%n9(:,i,j)=n9+1
                     
                     dPRRet%cldwcoeff(i,j,:,:)=cldwcoeff(1:10,1:nmemb)
                     
-                    !print*,'maxval=',maxval(radarRet%tb)
-                    !print*,'minval=',minval(radarRet%tb)
-                    !stop
+                   
                     if(radarRet%tb(2)>0) ntbpix=ntbpix+1
                     
                     do k=0,nmemb1-1
@@ -1066,14 +812,8 @@ subroutine radarRetSub2(nmu2,  nmfreq2,   icL, tbRgrid,               &
                        
                     enddo
 121                 format(81(F8.2,1x))
-                    if(wfractPix>90) then
-                       !write(*,121) wfmap(i,j), tbMean(i,j,:)
-                    endif
-                    if(ifdpr(1:1)=='Y') then
-                       do k=1,9
-                          !tbRgrid(k,i,j+icL)= dPRRet%tb(i,j,ipolG(k),ifreqG(k),nmemb1)
-                       enddo
-                    endif
+                   
+                   
                     
                     do k=0,nmemb1-1
                        dPRRet%log10dNw (k+1+(ibatch-1)*nmemb1,1:ngates,i,j)=      &
@@ -1134,77 +874,6 @@ subroutine radarRetSub2(nmu2,  nmfreq2,   icL, tbRgrid,               &
                  enddo
               enddo
               
-              wfractm=sum(wfract(:,:))/25.
-              wfractsd=sqrt(sum((wfract(:,:)-wfractm)**2)/25)
-              !begin SJM 10/16/15
-              !stype = LUT%land_class_map(mod(floor((dPRData%xlon(i,j)+180.)/360.*5760.),5760)+1, 2880-floor((dPRData%xlat(i,j)+90.)/180.*2880.)) !SJM 9/9/15
-              jj=2880-floor((DPRData%xlat(i,j)+90.)/180.*2880.)
-              if(jj .lt. 1) jj=1
-              if(jj .gt. 2880) jj = 2880
-              ii=floor((DPRData%xlon(i,j)+180.)/360.*5760.)+1
-              if(ii .lt. 1) ii = 1
-              if(ii .gt. 5760) ii = 5760
-              if(dPRData%snowIceCover(i,j) .eq. 0) then
-                 stype = LUT%land_class_map_bare(ii,jj) !SJM 9/9/15
-              else
-                 stype = LUT%land_class_map_snow(ii,jj) !SJM 9/9/15
-              endif
-              if(stype .eq. 1) then
-                 !print*, i,j, radarRet%sfc_wind(k+1),'3'
-                 call calc_relAz(scLonPR(i,j), scLatPR(i,j), dPRData%xlon(i,j), dPRData%xlat(i,j), dprData%envSfcWindU(i,j), dprData%envSfcWindV(i,j), relAz)
-                 do ii=1,5
-                    call intplte_emis(ii,0,dPRData%envSfcTemp(i,j),dprData%envSfcWind(i,j),relAz,S1eiaPR(i,j),emis,ebar)
-                    emissv(ii)=emis
-                    call intplte_emis(ii,1,dPRData%envSfcTemp(i,j),dprData%envSfcWind(i,j),relAz,S1eiaPR(i,j),emis,ebar)
-                    emissh(ii)=emis
-                 end do
-                 do ii=6,6
-                    call intplte_emis(ii,0,dPRData%envSfcTemp(i,j),dprData%envSfcWind(i,j),relAz,S2eiaPR(i,j),emis,ebar)
-                    emissv(ii)=emis
-                    call intplte_emis(ii,1,dPRData%envSfcTemp(i,j),dprData%envSfcWind(i,j),relAz,S2eiaPR(i,j),emis,ebar)
-                    emissh(ii)=emis
-                 end do
-                 !begin  SJM 2/14/17 emissivity standard deviation code
-                 emissv_std = missing_r4
-                 emissh_std = missing_r4
-              else if(stype .gt. 2 .and. wfract(2,2) .gt. 1) then !SJM 2/15/17 index changes
-                 call getemiss(dPRData%xlat(i,j),dPRData%xlon(i,j),dPRData%snowIceCover(i,j),emissv,emissh,emissv_std,emissh_std)
-                 call calc_relAz(scLonPR(i,j), scLatPR(i,j), dPRData%xlon(i,j), dPRData%xlat(i,j), dprData%envSfcWindU(i,j), dprData%envSfcWindV(i,j), relAz)
-                 do ii=1,5
-                    call intplte_emis(ii,0,dPRData%envSfcTemp(i,j),dprData%envSfcWind(i,j),relAz,S1eiaPR(i,j),emis,ebar)
-                    emissv(ii)=0.01*wfract(2,2)*emis+(1.-0.01*wfract(2,2))*emissv(ii) !SJM 2/15/17 index changes
-                    call intplte_emis(ii,1,dPRData%envSfcTemp(i,j),dprData%envSfcWind(i,j),relAz,S1eiaPR(i,j),emis,ebar)
-                    emissh(ii)=0.01*wfract(2,2)*emis+(1.-0.01*wfract(2,2))*emissh(ii) !SJM 2/15/17 index changes
-                 end do
-                 do ii=6,6
-                    call intplte_emis(ii,0,dPRData%envSfcTemp(i,j),dprData%envSfcWind(i,j),relAz,S2eiaPR(i,j),emis,ebar)
-                    emissv(ii)=0.01*wfract(2,2)*emis+(1.-0.01*wfract(2,2))*emissv(ii) !SJM 2/15/17 index changes
-                    call intplte_emis(ii,1,dPRData%envSfcTemp(i,j),dprData%envSfcWind(i,j),relAz,S2eiaPR(i,j),emis,ebar)
-                    emissh(ii)=0.01*wfract(2,2)*emis+(1.-0.01*wfract(2,2))*emissh(ii) !SJM 2/15/17 index changes
-                 end do
-                 !end  SJM 2/14/17
-              else
-                 call getemiss(dPRData%xlat(i,j),dPRData%xlon(i,j),dPRData%snowIceCover(i,j),emissv,emissh,emissv_std,emissh_std)
-              endif
-              emissoutL(i,j,1:13)=(/emissv(1),emissh(1),&
-                   emissv(2),emissh(2),&
-                   emissv(3), &
-                   emissv(4),emissh(4),&
-                   emissv(5),emissh(5),&
-                   emissv(6),emissh(6),&
-                   emissv(6),emissv(6)/)
-              !begin  SJM 2/14/17 emissivity rms vectors
-              emis_rms_NS(i,j,1:13)=(/emissv_std(1),emissh_std(1),&
-                   emissv_std(2),emissh_std(2),&
-                   emissv_std(3), &
-                   emissv_std(4),emissh_std(4),&
-                   emissv_std(5),emissh_std(5),&
-                   emissv_std(6),emissh_std(6),&
-                   emissv_std(6),emissv_std(6)/)
-              emis_rms_MS(i,j,1:13) = emis_rms_NS(i,j,1:13)
-              !end   SJM 2/14/17
-              if(maxval(emissoutL(i,j,1:13)) .gt. 2.) print'(A6,2I5,13F8.3)','nopcp ', i,j,emissoutL(i,j,1:13)
-              !end SJM 10/16/15
               do ik=1,9
                  tbNoOcean(i,j,ik)=tbRgrid(ik,i,j+icL)
               enddo
@@ -1219,22 +888,6 @@ subroutine radarRetSub2(nmu2,  nmfreq2,   icL, tbRgrid,               &
         !if(maxval(dPRRet%emis(i,j,:,:,:)) .gt. 2.) print*, dPRRet%emis(i,j,:,:,:)
      enddo
   enddo
-  print*, maxval(dPRRet%log10dNw)
-  print*, minval(dPRRet%log10dNw)
-  print*, dPRData%node(:,25,108)
-  print*, 'r85=',sum(dprret%rrate(:,85,25,108))/nmemb1
-  print*, 'r86=',sum(dprret%rrate(:,86,25,108))/nmemb1
-  print*, 'n85=',sum(dprret%log10dnw(:,85,25,108))/nmemb1
-  print*, 'n86=',sum(dprret%log10dnw(:,86,25,108))/nmemb1
-  print*, sum(dprret%d0(:,85,25,108))/nmemb1
-  print*, sum(dprret%d0(:,86,25,108))/nmemb1
-  !print*,tbRgrid(1,24,icL+1:icL+300)
-  !print*,tbRgrid(1,49,icL+1:icL+300)
-  !print*,tbRgrid(1,1,icL+1:icL+300)
-  !stop
-  !print*, 'maxval=',maxval(dPRRet%tb),minval(dPRRet%tb)
-  !print*,tbRgrid(7,:,1:300)
-  !stop
 end subroutine radarRetSub2
 
 subroutine radarRetSub3(nmu2,  nmfreq2,   icL, tbRgrid,               &
@@ -1403,70 +1056,7 @@ subroutine radarRetSub3(nmu2,  nmfreq2,   icL, tbRgrid,               &
   integer :: sfcBin(nscans,npixs)
   real    :: tbsim(nscans,npixs,nchans)
 
-  do ifreq1=1,9
-     call footprintmap2(ifreqG(ifreq1),wfmap(1:49,1:dPRData%n1c21),&
-          fpmap(1:49,1:dPRData%n1c21,ifreq1),&
-          49,dPRData%n1c21,dPRData%xlat(1:49,1:dPRData%n1c21), &
-          dPRData%xlon(1:49,1:dPRData%n1c21),&
-          scLonPR(1:49,1:dPRData%n1c21),scLatPR(1:49,1:dPRData%n1c21))
-  enddo
-  fpmapN=1
-  tb=tbMean
-  !tbRgrid(1:9,i,j+icL)
-  nf=9
-  !call endprofs()
-  !print*, 'tb=',maxval(tb(:,:,1:9))
-  !print*, 'tbObs=',maxval(tbRgrid(1:9,:,:))
-  !print*, maxval(tbRgrid(1:9,1:49,ic+1:ic+dPRData%n1c21))
-  call setoptvars(covTb(1:49,1:dPRData%n1c21,1:9,1:9),&
-       invCovTb(1:49,1:dPRData%n1c21,1:9,1:9),tbMean(1:49,1:dPRData%n1c21,1:9),&
-       tbMin(1:49,1:dPRData%n1c21,1:9),&
-       tbMax(1:49,1:dPRData%n1c21,1:9),&
-       tb(1:49,1:dPRData%n1c21,1:9),&
-       tbRgrid(1:9,1:49,ic+1:ic+dPRData%n1c21),&
-       tbObs(1:49,1:dPRData%n1c21,1:9),wfmap(1:49,1:dPRData%n1c21),&
-       49,dPRData%n1c21,nf)
-  
-  tb0=tb
-  tbout2d=-99
-  tbout2dNoOcean=-99
-  iconv=1
-  print*, 'before conv'
-  !print*, 'tb0=',maxval(tb0(:,:,1:9))
-  !print*, 'tbmean=',maxval(tbmean(:,:,1:9))
-  !stop
-  print*, maxval(tbout2D), maxval(tbout2dnoocean)
-  if(iconv==1) then
-     call convallfreq(actOb,tb0(:,:,1:9),tbMean(:,:,1:9),&
-          invCovTb(:,:,1:9,1:9),&
-          tbObs(:,:,1:9),tbout2D(:,:,1:9),dfdtb(:,:,1:9),49,dPRData%n1c21,&
-          dPRData%xlat(:,1:dPRData%n1c21), dPRData%xlon(1:49,1:dPRData%n1c21),&
-          scLonPR(1:49,1:dPRData%n1c21),scLatPR(1:49,1:dPRData%n1c21),&
-          wfmap(1:49,1:dPRData%n1c21),&
-          fpmap(1:49,1:dPRData%n1c21,1:9), &
-          nf,fobj,ifreqG(1:9),sfcRain(1:49,1:dPRData%n1c21),ialg)
-     
-     call convallfreq(actOb,tbNoOcean(:,:,1:9),tbNoOcean(:,:,1:9),&
-          invCovTb(:,:,1:9,1:9),&
-          tbObs(:,:,1:9),tbout2DNoOcean(:,:,1:9),dfdtb(:,:,1:9),&
-          49,dPRData%n1c21,&
-          dPRData%xlat(:,1:dPRData%n1c21), dPRData%xlon(1:49,1:dPRData%n1c21),&
-          scLonPR(1:49,1:dPRData%n1c21),scLatPR(1:49,1:dPRData%n1c21),&
-          wfmap(1:49,1:dPRData%n1c21),&
-          fpmapN(1:49,1:dPRData%n1c21,1:9), &
-          nf,fobj,ifreqG(1:9),sfcRain(1:49,1:dPRData%n1c21),ialg)
-     print*, 'after conv'
-  endif
-  !print*, tbout2D(24,:,1)
-  !stop
-  !call clearsc()
-  call asciiplot(sfcRain(:,1:150),49,150,2,1,1e-1,100.)
-  print*,''
-  print*,''
-  call asciiplot(sfcRain(:,151:300),49,150,2,1,1e-1,100.)
-  print*, maxval(dPRRet%log10dNw)
-  print*, minval(dPRRet%log10dNw)
-  !stop
+
 end subroutine radarRetSub3
 
 

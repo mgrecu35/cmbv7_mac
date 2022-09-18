@@ -210,96 +210,12 @@ subroutine radarRetSub4_FS(nmu2,  nmfreq2,   icL, tbRgrid,               &
   sfcRainLiqFrac = missing_r4
   sfcRainLiqFracMS = missing_r4
 
-  !print*, tbObs(:,:,1)
-  print*, 'out2d', icL
-  do i=12,37
-     !print*,i
-     !print*, tbout2D(i,:,1)
-  end do
-  print*, maxval(tbout2D), maxval(tbout2dnoocean)
-  !stop
-  if(iconv==1) then
-   call updateTbs(dPRData%n1c21,tbObs(:,:,1:9),&
-        tbout2D(:,:,1:9),tb(:,:,1:9),fpmap(:,:,1:9),ialg1)
-   call updateTbsL(dPRData%n1c21,tbObs(:,:,1:9),tbout2DNoOcean(:,:,1:9),&
-        tbNoOcean(:,:,1:9),fpmapN(:,:,1:9),ialg1)
-   ialg1=ialg
-!begin  MG 9/17/18 added following code to adjust deconvolution
-   if(ialg==2) then
-      do i=1,1
-         call updateTbs(dPRData%n1c21,tbObs(:,:,1:9),&
-              tbout2D(:,:,1:9),tb(:,:,1:9),fpmap(:,:,1:9),ialg1)
-         call updateTbsL(dPRData%n1c21,tbObs(:,:,1:9),tbout2DNoOcean(:,:,1:9),&
-              tbNoOcean(:,:,1:9),fpmapN(:,:,1:9),ialg1)
-      enddo
-   endif
-!end    MG 9/17/18
-endif
-!print*,tbObs(24,:,1)
-!stop
-print*,'ialg=',ialg
-print*, maxval(dprret%tb)
-print*, maxval(tb)
-!stop
+
+
 tb0=tb
 print*, 'after update'
 
-do j=3,-dPRData%n1c21-3
-   do i=3,49-2
-      if(dPRData%raintype(i,j)>0 .and. minval(tbout2d(i,j,1:9))>0 .and. &
-         minval(tbRgrid(1:9,i,ic+j))>0.) then
-         call setemtbm(emtbm(1:9),dPRRet%emtb(i,j,:,:,1:nmemb1),nmfreq2,nmemb1)
-         call dboux2(tb(i,j,1:9),tb0(i,j,1:9),&
-              emtbm,ifreqG,ipolG,fem)
 
-         rms1=1e7
-         do jk=1,7
-            fem(jk)=fem(jk)/10.
-            dPRRet%tb(i,j,ipolG(jk),ifreqG(jk),:)= &
-                 fem(jk)*dPRRet%emtb(i,j,ipolG(jk),ifreqG(jk),:)+&
-                 (1-fem(jk))*dPRRet%tb(i,j,ipolG(jk),ifreqG(jk),:)
-         enddo
-
-         !do ik=1,nmemb1
-         !   rms2=0
-            
-         !   do jk=1,5
-         !      rms2=rms2+(tb(i,j,jk)- &
-         !           dPRRet%tb(i,j,ipolG(jk),ifreqG(jk),ik))**2
-         !   enddo
-         !
-         !   rmsS(ik)=rms2
-         !   if(rms2<rms1) then
-         !      rms1=rms2
-         !      do jk=1,9
-         !         tb0(i,j,jk)= &
-         !              dPRRet%tb(i,j,ipolG(jk),ifreqG(jk),ik)
-         !      enddo
-         !   end if
-         !enddo
-         !tb0(i,j,1:9)=tb(i,j,1:9)
-      else
-         if (minval(tbRgrid(1:9,i,ic+j))>0.) then
-            tb0(i,j,1:9)=tb(i,j,1:9)
-         endif
-      endif
-   enddo
-enddo
-
-
-
-
-
-!do j=3,dPRData%n1c21-3
-!   do i=3,49-2
-!      if(dPRData%raintype(i,j)>0 .and. minval(tbout2d(i,j,:))>0 .and. &
-!           minval(tbRgrid(:,i,ic+j))>0.) then
-!         write(*,131) tbRgrid(1:9,i,j+icL),tbout2d(i,j,1:9)
-!      endif
-!   enddo
-!enddo
-!call endtbs()
-!call closeascii()
 132 format(10(F6.2,1x),I3)
 105 format(51(F6.2,1x))
 
@@ -376,177 +292,8 @@ dm3dms_a=missing_r4
 nw3d_a=missing_r4
 nw3dms_a=missing_r4
 !dPRRet%tb=-99 ! set tbs to -99
-do j=1,dPRData%n1c21
-   do i=1,49
-!  SFM  begin  07/29/2014; for M.Grecu, elminate NANs
-      do i1=1,5
-         do j1=1,5
-            eLon=dPRData%xlon(i,j)
-            eLat=dPRData%xlat(i,j)
-            call getwfraction(eLat+(i1-2)*0.15,&
-                 eLon+(j1-2)*0.15,wfract(i1,j1))
-            if(i1.eq.2.and.j1.eq.2) then
-               wfmap(i1,j1)=wfract(i1,j1)/100.
-            endif
-         enddo
-      enddo
-      wfractm=sum(wfract(:,:))/25.
-!      if(i .eq. 25) write(*, '("scan: ", i5, "  lat: ", f10.4, "  lon: ", f10.4, &
-!        "  wfractm: ", f10.4)'), j, dPRData%xlat(i,j), dPRData%xlon(i,j), wfractm
-      tbRgrid(10:13,i,j+icL)= hFreqPRg(i,j,1:4)
-      !stype = LUT%land_class_map(mod(floor((dPRData%xlon(i,j)+180.)/360.*5760.),5760)+1, 2880-floor((dPRData%xlat(i,j)+90.)/180.*2880.)) !SJM 9/9/15
-      jj=2880-floor((DPRData%xlat(i,j)+90.)/180.*2880.)
-      if(jj .lt. 1) jj=1
-      if(jj .gt. 2880) jj = 2880
-      ii=floor((DPRData%xlon(i,j)+180.)/360.*5760.)+1
-      if(ii .lt. 1) ii = 1
-      if(ii .gt. 5760) ii = 5760
-      if(dPRData%snowIceCover(i,j) .eq. 0) then
-        stype = LUT%land_class_map_bare(ii,jj) !SJM 9/9/15
-      else
-        stype = LUT%land_class_map_snow(ii,jj) !SJM 9/9/15
-      endif
-      if( dPRData%rainType(i,j)>0) then ! &
- !          .and. j>0 .and. j<dPRData%n1c21-2 )           &
-!      then
-         if(dPRData%node(1, i, j).gt.dPRData%node(5, i, j)) then
-            dPRData%node(1, i, j)=dPRData%node(5, i, j)
-         endif
-         ntbpix2=ntbpix2+1
-         !print*, i, j
-         do k=max(1,dPRData%node(1, i, j)),min(dPRData%node(5, i, j)+1,88)
-            dm3D_a(k,i,j)=sum(dPRRet%d0(1:nmemb1,k,i,j))/nmemb1
-            dm3Dms_a(k,i,j)=sum(dPRRet%ms%d0(1:nmemb1,k,i,j))/nmemb1
-            nw3d_a(k,i,j)=sum(dPRRet%log10dNw(1:nmemb1,k,i,j))/nmemb1
-            nw3d_a(k,i,j)=sum(dPRRet%MS%log10dNw(1:nmemb1,k,i,j))/nmemb1
-         enddo
+print*, 'done kalman'
 
-         if(ifdpr(1:1)=='Y') goto 30
-      !tbout(10)=sum(dPRRet%tb(i,j,1,6,1:1*nmemb1))/(nmemb1)
-      !tbout(11)=sum(dPRRet%tb(i,j,2,6,1:1*nmemb1))/(nmemb1)
-      !tbout(12)=sum(dPRRet%tb(i,j,1,7,1:1*nmemb1))/(nmemb1)
-      !tbout(13)=sum(dPRRet%tb(i,j,1,8,1:1*nmemb1))/(nmemb1)
-      !do k=10,13
-      !   tbout(k)=hFreqPRg(i,j,k-9)
-      !enddo
-!          write(31) i,j,ichunk,dPRData%sigmaZeroKu(i,j), dPRData%sigmaZeroKa(i,j), sigmaZeroVarKu(i,j),sigmaZeroVarKa(i,j),sigmaZeroCov(i,j), tb(i,j,1:9),hFreqPRg(i,j,:), &!tbRgrid(1:9,i,j+icL), &!scan/ray number, observed sigma_zero
-!          dPRRet%sfcRainEns(i,j,1:nmemb1), & !Sfc rain for each ens member
-!          dPRRet%sfcd0Ens(i,j,1:nmemb1), & !Sfc D0 for each ens member
-!          dPRRet%sfcNwEns(i,j,1:nmemb1), &!Sfc Nw for each ens member
-!          dPRRet%sfcWindEns(i,j,1:nmemb1), &!wind for each ens member
-!          dPRRet%pia13mod(i,j,1:nmemb1), &!PIAKu for each ens member
-!          dPRRet%pia35mod(i,j,1:nmemb1), &!PIAKa for each end member
-!          dPRRet%simSigmaZeroKu(i,j,1:nmemb1), &!sigma_zero_Ku for each ens member
-!          dPRRet%simSigmaZeroKa(i,j,1:nmemb1), &!sigma_zero_Ka for each ens member
-!          dPRRet%tb(i,j,:,:,1:nmemb1), &!Pixel Tb for each ens member (10-19, at least)
-!          dPRRet%emis(i,j,:,:,1:nmemb1)
-!filterUpNS(dPRData,dPRRet, Xens,Yens,Yobs,Xup,tb,&
-!     dprRain,sfcRain,nmemb1,ic,i,j,&
-!     nxu,nyu,wfractm,s0KuVar,s0KaVar,s0Cov,hFreqTb)
-         
-         if(wfractm>99 .and. stype .eq. 1) then
-            call filterUpNS(dPRData,dPRRet, Xens,Yens,Yobs,Xup,  &
-                 tb,dprRain,sfcRain,nmemb1,ic,i,j,nx,ny,wfractm,&
-                 sigmaZeroVarKu, sigmaZeroVarKa, sigmaZeroCov,&
-                 hFreqPRg(i,j,:))
-            do k=1,9
-               tb0(i,j,k)=sum(dPRRet%tb(i,j,ipolG(k),ifreqG(k),1:nmemb1))/nmemb1 
-            enddo
-            !print*, tb0(i,j,1:9)
-
-         else
-            call filterUpNSLand(dPRData,dPRRet, Xens,Yens,Yobs,Xup,  &
-                 tbNoOcean,dprRain,sfcRain,nmemb1,ic,i,j,nx,ny,wfractm,&
-                 sigmaZeroVarKu, sigmaZeroVarKa, sigmaZeroCov,&
-                 hFreqPRg(i,j,:))
-            do k=1,9
-               tbNoOcean(i,j,k)=&
-                    sum(dPRRet%tb(i,j,ipolG(k),ifreqG(k),1:nmemb1))/nmemb1
-            enddo
-            !print*, tbNoOcean(i,j,1:9)
-            
-         endif
-         if(i.eq.6.and.j.eq.117) then
-            print*, dprdata%node(:,i,j)
-            print*, dPRRet%sfcRainEns(i,j,1:nmemb1)
-            print*,'--------------------------------------'
-            print*, dPRRet%rrate(1:nmemb1,dPRData%node(5,i,j),i,j)
-            print*,'--------------------------------------'
-            print*, dPRRet%rrate(1:nmemb1,dPRData%node(5,i,j)-1,i,j)
-            !stop
-         endif
-!                   write(32) i,j,ichunk,dPRData%sigmaZeroKu(i,j), dPRData%sigmaZeroKa(i,j), dPRData%srtPIAKu(i,j), dPRData%dsrtPIAKu(i,j), dPRData%dsrtPIAKa(i,j), tb(i,j,1:9),hFreqPRg(i,j,:), &!tbRgrid(1:9,i,j+icL), &!scan/ray number, observed sigma_zero
-!          dPRRet%sfcRainEns(i,j,1:nmemb1), & !Sfc rain for each ens member
-!          dPRRet%sfcd0Ens(i,j,1:nmemb1), & !Sfc D0 for each ens member
-!          dPRRet%sfcNwEns(i,j,1:nmemb1), &!Sfc Nw for each ens member
-!          dPRRet%sfcWindEns(i,j,1:nmemb1), &!wind for each ens member
-!          dPRRet%pia13mod(i,j,1:nmemb1), &!PIAKu for each ens member
-!          dPRRet%pia35mod(i,j,1:nmemb1), &!PIAKa for each end member
-!          dPRRet%simSigmaZeroKu(i,j,1:nmemb1), &!sigma_zero_Ku for each ens member
-!          dPRRet%simSigmaZeroKa(i,j,1:nmemb1), &!sigma_zero_Ka for each ens member
-!          dPRRet%tb(i,j,:,:,1:nmemb1), &!Pixel Tb for each ens member (10-19, at least)
-!          dPRRet%emis(i,j,:,:,1:nmemb1)
-         
-         if(i>=2 .and. i<=48) then
-            stdpia35=0.
-            if(j>1 .and. j<dPRData%n1c21 .and. pia35m(i,j)>0.1) then
-               nubfc= 1./srtpiaf(pia35m(i-1:i+1,j-1:j+1),9)
-            else
-               nubfc=1.
-            endif
-!begin  WSO 2/10/17 assigne 1/nubfc to output variable
-            subfootvariability_MS(i, j) = 1./nubfc 
-!end    WSO 2/10/17
-            !nubfc=1
-            !print*, i,j,nubfc
-            do k=0,nmemb1-1
-              if(dPRRet%simSigmaZeroKa(i,j,k+1) .ne. -99.) dPRRet%simSigmaZeroKa(i,j,k+1) = dPRRet%simSigmaZeroKa(i,j,k+1)-dPRRet%pia35mod(i,j,k+1)/nubfc!+ds0Ka 
-              !print '(I3,13F8.3,2F8.2)', k, radarRet%tb(k*2*nmfreq2+1:k*2*nmfreq2+13), radarRet%simSigmaZeroKu(k+1), radarRet%simSigmaZeroKa(k+1)
-            end do
-            !nubfc=0.1-0.45*stdpia35+0.42*stdpia35*stdpia35
-            !print*, dPRData%dsrtPIAka(i,j),nubfc
-            if (nubfc*dPRData%dsrtPIAka(i,j)<50 .and. nubfc>=1.) then
-               !dPRData%dsrtPIAka(i,j)=dPRData%dsrtPIAka(i,j)*1.1*nubfc
-            endif
-            call filterUpMS(dPRData,dPRRet, Xens,Yens,Yobs,Xup,  &
-                 tb,dprRain,sfcRain,nmemb1,ic,i,j,nx,ny,wfractm,&
-                 sigmaZeroVarKu, sigmaZeroVarKa, sigmaZeroCov,&
-                 hFreqPRg(i,j,:),nubfc)
-            if(i.eq.6.and.j.eq.117) then
-               print*,'MS'
-               print*, dprdata%node(:,i,j)
-               print*, dPRRet%MS%sfcRainEns(i,j,1:nmemb1)
-               print*,'--------------------------------------'
-               print*, dPRRet%MS%rrate(1:nmemb1,dPRData%node(5,i,j),i,j)
-               print*,'--------------------------------------'
-               print*, dPRRet%MS%rrate(1:nmemb1,dPRData%node(5,i,j)-1,i,j)
-               !stop
-            endif
-            do k=1,9
-               tb0MS(i,j,k)=sum(dPRRet%MS%tb(i,j,ipolG(k),&
-                    ifreqG(k),1:nmemb1))/nmemb1
-               tbNoOceanMS(i,j,k)=sum(dPRRet%MS%tb(i,j,ipolG(k),&
-                    ifreqG(k),1:nmemb1))/nmemb1
-            enddo
-         endif
-         !  SFM  end    07/29/2014
-30       continue
-         !  SFM  begin  07/29/2014; for M.Gecu, elminate NANs
-      else
-
-      end if
-   enddo
-enddo
-print*, 'maxval=',maxval(dPRRet%log10dNw)
-print*, minval(dPRRet%log10dNw)
-print*, 'Nw_MS vals=',maxval(dPRRet%MS%log10dNw), minval(dPRRet%MS%log10dNw)
-!stop
-!call closeenkffile2()
-! close(31)
-! close(32)
-! close(33)
-print*, 'after filtering'
-print*, maxval(dprret%tb)
 !print*, maxval(dprRet%emis), maxval(dprRet%MS%emis)
 !stop
 !print*, maxval(dPRRet%convtb)
@@ -909,100 +656,7 @@ enddo
 !stop
 !idir=1
 print*, 'idir_inside=', idir
-!idir=-idir
-!print*, maxval(nw3d)
-!print*, minval(nw3d)
-!stop
-print*,iiad
-if(iiad==1) then
-   call frteprep(binNodes,pRate,swc3d,pRateOut,swcOut,nwOut,z13,emiss2d,&
-        envNode,pType,&
-        qv3D,press3D,airTemp3D,nw3d,tbsim,nscans,npixs,nlev,nchans,idir,&
-        sfcBin,sfcTemp,cldw3d,tbobsT,nfreq,clutFree,dPRData%n1c21)
-   
-   do i=2,48
-      do j=1,dPRData%n1c21
-         do k=1,13
-            oe_tbs(j,i,k,4)=sum(dPRRet%MS%tb(i,j,ipolG(k),ifreqG(k),1:1*nmemb1))/(nmemb1)
-         end do
-         if(oe_tbs(j,i,1,2)>50) then
-            do k=1,13
-               dPRRet%MS%tb(i,j,ipolG(k),ifreqG(k),1:1*nmemb1)=oe_tbs(j,i,k,2)
-               tb0MS(i,j,k)=sum(dPRRet%MS%tb(i,j,ipolG(k),&
-                    ifreqG(k),1:nmemb1))/nmemb1
-               tbNoOceanMS(i,j,k)=sum(dPRRet%MS%tb(i,j,ipolG(k),&
-                    ifreqG(k),1:nmemb1))/nmemb1
-            end do
-         end if
-      end do
-   end do
-   do i=2,48
-      do j=1,dPRData%n1c21
-         do k=1,min(min(binNodes(j,i,5),binNodes(j,i,4))+1,88)
-            rrate3DMS(k,i,j)=pRateOut(j,i,k)
-            pwc3DMS(k,i,j)=swcOut(j,i,k)
-         enddo
-         do k=min(binNodes(j,i,5),binNodes(j,i,2))+1,&
-              min(binNodes(j,i,5),binNodes(j,i,3))+1
-            !xf=1-(k-binNodes(j,i,2)-1.)/(binNodes(j,i,3)-binNodes(j,i,2)+1e-5)
-            !rrate3DMS(k,i,j)=xf*pRateOut(j,i,k)+(1-xf)*pRate(j,i,k)
-            !pwc3DMS(k,i,j)=xf*swcOut(j,i,k)+(1-xf)*swc3D(j,i,k)
-         enddo
-         do k=1,88
-            if(dPRData%rainType(i,j)>=100) then
-               dPRRet%MS%log10dNw(1:nmemb1,k,i,j)=&
-                    dPRRet%MS%log10dNw(1:nmemb1,k,i,j)!-nw3d(j,i,k)+nwOut(j,i,k)
-            endif
-         enddo
-      enddo
-   enddo
-endif
 
-if(iconv==1) then
-   call convallfreq(actOb,tb0(:,:,1:9),tbMean(:,:,1:9),&
-        invCovTb(:,:,1:9,1:9),&
-        tbObs(:,:,1:9),tbout2D(:,:,1:9),dfdtb(:,:,1:9),49,dPRData%n1c21,&
-        dPRData%xlat(:,1:dPRData%n1c21), dPRData%xlon(1:49,1:dPRData%n1c21),&
-        scLonPR(1:49,1:dPRData%n1c21),scLatPR(1:49,1:dPRData%n1c21),&
-        wfmap(1:49,1:dPRData%n1c21),&
-        fpmap(1:49,1:dPRData%n1c21,1:9), &
-        nf,fobj,ifreqG,sfcRain(1:49,1:dPRData%n1c21),ialg)
-   !print*, 'tbout2d_nadir'
-   !print*, tbout2D(24,:,1)
-   !stop
-   call convallfreq(actOb,tbNoOcean(:,:,1:9),tbNoOcean(:,:,1:9),&
-        invCovTb(:,:,1:9,1:9),&
-        tbObs(:,:,1:9),tbout2DNoOcean(:,:,1:9),dfdtb(:,:,1:9),&
-        49,dPRData%n1c21,&
-        dPRData%xlat(:,1:dPRData%n1c21), dPRData%xlon(1:49,1:dPRData%n1c21),&
-        scLonPR(1:49,1:dPRData%n1c21),scLatPR(1:49,1:dPRData%n1c21),&
-        wfmap(1:49,1:dPRData%n1c21),&
-        fpmapN(1:49,1:dPRData%n1c21,1:9), &
-        nf,fobj,ifreqG(1:9),sfcRain(1:49,1:dPRData%n1c21),ialg)
-   
-   call convallfreq(actOb,tb0MS(:,:,1:9),tbMean(:,:,1:9),&
-        invCovTb(:,:,1:9,1:9),&
-        tbObs(:,:,1:9),tbout2DMS(:,:,1:9),dfdtb(:,:,1:9),49,dPRData%n1c21,&
-        dPRData%xlat(:,1:dPRData%n1c21), dPRData%xlon(1:49,1:dPRData%n1c21),&
-        scLonPR(1:49,1:dPRData%n1c21),scLatPR(1:49,1:dPRData%n1c21),&
-        wfmap(1:49,1:dPRData%n1c21),&
-       fpmap(1:49,1:dPRData%n1c21,1:9), &
-        nf,fobj,ifreqG,sfcRain(1:49,1:dPRData%n1c21),ialg)
-   
-   call convallfreq(actOb,tbNoOceanMS(:,:,1:9),tbNoOceanMS(:,:,1:9),&
-        invCovTb(:,:,1:9,1:9),&
-        tbObs(:,:,1:9),tbout2DNoOceanMS(:,:,1:9),dfdtb(:,:,1:9),&
-        49,dPRData%n1c21,&
-        dPRData%xlat(:,1:dPRData%n1c21), dPRData%xlon(1:49,1:dPRData%n1c21),&
-        scLonPR(1:49,1:dPRData%n1c21),scLatPR(1:49,1:dPRData%n1c21),&
-        wfmap(1:49,1:dPRData%n1c21),&
-        fpmapN(1:49,1:dPRData%n1c21,1:9), &
-        nf,fobj,ifreqG(1:9),sfcRain(1:49,1:dPRData%n1c21),ialg)
-endif
-
-print*, 'oe_tbs'
-!print*, oe_tbs(:,24,7,1:2)
-!stop
 
 !stop
 print*, dPRData%n1c21
@@ -1071,7 +725,7 @@ do j=1,dPRData%n1c21
       print*, 'line', 1038, flagScanPattern_0,flagScanPattern
       stop
    end if
-
+  
    do i=1,49
       if(ialg==1) then
          !begin  WSO 9/28/13 added rain flag that includes bad scan as missing
@@ -1124,6 +778,7 @@ do j=1,dPRData%n1c21
          !       write(*, '("i: ", i5, "  k: ", i5, "  zenangl: ", f8.4, "  env_node: ", &
          !        i5)') i, k, dPRData%localZenithAngle(i, j), env_nodes(k, i)
       enddo
+
       !end    WSO 9/19/13
       
       if(ialg==2) then
@@ -1156,6 +811,7 @@ do j=1,dPRData%n1c21
       else
          cldwprof=0
       endif
+      
       if(ialg==2) then
          cldiprof = missing_r4
          call copycldwater_t(cldwprof,i-1)
@@ -1204,7 +860,7 @@ do j=1,dPRData%n1c21
               dprData%binZeroDegree(i,j), dprData%binClutterFree(i,j),&
               pType(j,i),sfcRainLiqFrac(i, j))
       endif
-         
+      
 !begin  WSO 8/19/13 change dNw to Nw and add mu
       if(dPRData%rainType(i,j)>=100) then
          do k=1,88
@@ -1363,18 +1019,16 @@ do j=1,dPRData%n1c21
          !--fs_300--!
       endif
 !end    WSO 8/30/13
-      !stype = LUT%land_class_map(mod(floor((DPRData%xlon(i,j)+180.)/360.*5760.),5760)+1, 2880-floor((DPRData%xlat(i,j)+90.)/180.*2880.)) !SJM 9/9/15'
+      !stype = LUT%land_class_map(mod(floor((DPRData%xlon(i,j)+180.)/360.*5760.),5760)+1, 2880-floor((DPRData%xlat(i,j)+90.)/180.*2880.)) !SJM 9/9/15
+
       jj=2880-floor((DPRData%xlat(i,j)+90.)/180.*2880.)
       if(jj .lt. 1) jj=1
       if(jj .gt. 2880) jj = 2880
       ii=floor((DPRData%xlon(i,j)+180.)/360.*5760.)+1
       if(ii .lt. 1) ii = 1
       if(ii .gt. 5760) ii = 5760
-      if(dPRData%snowIceCover(i,j) .eq. 0) then
-        stype = LUT%land_class_map_bare(ii,jj) !SJM 9/9/15
-      else
-        stype = LUT%land_class_map_snow(ii,jj) !SJM 9/9/15
-      endif
+      !print*, ' got to line 1030'
+
       if(dprRet%emis(i,j,1,1,1) .gt. 0.) then
          !print*, dprRet%emis(i,j,1,1,1:nmemb1)
          emissoutL(i,j,1) = sum(dprRet%emis(i,j,1,1,1:nmemb1))/nmemb1
@@ -1406,56 +1060,7 @@ do j=1,dPRData%n1c21
          !print '(2i5, 13F8.3)', i, j, emis_rms_NS(i,j,1:13)
       endif
 
-      !print*, DPRData%xlon(i,j), DPRData%xlat(i,j), stype
-      if(w10_out_NS(i,j)>0 .and. stype .eq. 1) then!wfmap(i,j)>0.9) then
-         call calc_relAz(sclonPR(i,j), sclatPR(i,j), DPRData%xlon(i,j), DPRData%xlat(i,j), dprData%envSfcWindU(i,j), dprData%envSfcWindV(i,j), relAz)
-         !print*, i,j,w10_out_NS(i,j),'4'
-         do jk=1,9
-            !begin  WSO 10/14/15 flip polarization indices
-            !            !ipolG(jk),ifreqG(jk)
-            !            call intplte_emis(ifreqG(jk),1-(ipolG(jk)-1),dPRData%envSknTemp(i,j),w10_out_NS(i,j),emissout(i,j,jk),ebar)
-            !ipolG(jk),ifreqG(jk)
-            call intplte_emis(ifreqG(jk),ipolG(jk)-1,dPRData%envSknTemp(i,j),w10_out_NS(i,j),relAz,S1eiaPR(i,j),emissoutL(i,j,jk),ebar)
-            !end    WSO 10/14/14
-         enddo
-         call intplte_emis(ifreqG(10),0,dPRData%envSknTemp(i,j),w10_out_NS(i,j),relAz,S2eiaPR(i,j),emissoutL(i,j,10),ebar)
-         call intplte_emis(ifreqG(11),1,dPRData%envSknTemp(i,j),w10_out_NS(i,j),relAz,S2eiaPR(i,j),emissoutL(i,j,11),ebar)
-         !          if(dPRData%rainType(i,j)<1 .and.  abs(dPRData%xlat(i, j))>55) then
-         !             call setEnv(dPRData%envQv(:,i,j),dPRData%envTemp(:,i,j),&
-         !                  dPRData%envPress(:,i,j),dPRData%envSfcTemp(i,j),&
-         !                  dPRData%envSknTemp(i,j))
-         !             call getemissout2(tbRgrid(1:9,i,j+icL),emissout(i,j,1:9))
-         !             emissout(i,j,10)=emissout(i,j,8)
-         !             emissout(i,j,11)=emissout(i,j,9)
-         !             emissout(i,j,12)=emissout(i,j,8)
-         !             emissout(i,j,13)=emissout(i,j,8)
-         !          endif
-         !begin  WSO 10/14/15 replicate emissivities to HF
-         emissoutL(i,j,12:13)=emissoutL(i,j,10)
-         !end    WSO 10/14/15
-      else if(dprRet%emis(i,j,1,1,1) .gt. 0.) then
-         !print*, dprRet%emis(i,j,1,1,1:nmemb1)
-         emissoutL(i,j,1) = sum(dprRet%emis(i,j,1,1,1:nmemb1))/nmemb1
-         emissoutL(i,j,2) = sum(dprRet%emis(i,j,2,1,1:nmemb1))/nmemb1
-         emissoutL(i,j,3) = sum(dprRet%emis(i,j,1,2,1:nmemb1))/nmemb1
-         emissoutL(i,j,4) = sum(dprRet%emis(i,j,2,2,1:nmemb1))/nmemb1
-         emissoutL(i,j,5) = sum(dprRet%emis(i,j,1,3,1:nmemb1))/nmemb1
-         emissoutL(i,j,6) = sum(dprRet%emis(i,j,1,4,1:nmemb1))/nmemb1
-         emissoutL(i,j,7) = sum(dprRet%emis(i,j,2,4,1:nmemb1))/nmemb1
-         emissoutL(i,j,8) = sum(dprRet%emis(i,j,1,5,1:nmemb1))/nmemb1
-         emissoutL(i,j,9) = sum(dprRet%emis(i,j,2,5,1:nmemb1))/nmemb1
-         emissoutL(i,j,10) = sum(dprRet%emis(i,j,1,6,1:nmemb1))/nmemb1
-         emissoutL(i,j,11) = sum(dprRet%emis(i,j,2,6,1:nmemb1))/nmemb1
-         emissoutL(i,j,12:13) = emissoutL(i,j,10)
-      end if
 
-      !endif
-      !if(maxval(emissout(i,j,1:13)) .gt. 2.) then 
-      !  print'(A6,2I5,13F8.3)', 'NS Out', i,j,emissout(i,j,1:13)
-      !  print*, dprRet%emis(i,j,1,1,1:nmemb1)
-      !endif
-      !print '(2I5,13F8.3)',i,j,emissout(i,j,1:13)
-      !begin  WSO 6/5/18 limit emissivities
       do k = 1, 13
          if(emissoutL(i,j,k) .gt. missing_r4) then
             emissoutL(i,j,k) = min(max(emissoutL(i,j,k), surfEmissivity_min), surfEmissivity_max)
@@ -1642,49 +1247,7 @@ do j=1,dPRData%n1c21
            emis_rms_MS(i,j,12:13) = emis_rms_MS(i,j,10)
            !print '(2i5, 13F8.3)', i, j, emis_rms_MS(i,j,1:13)
          endif
-
-         if(w10_out_MS(i,j)>0 .and. wfmap(i,j)>0.9) then
-            !print*, i,j,w10_out_MS(i,j),'5'
-            call calc_relAz(sclonPR(i,j),sclatPR(i,j), DPRData%xlon(i,j), DPRData%xlat(i,j), dprData%envSfcWindU(i,j), dprData%envSfcWindV(i,j), relAz)
-            do jk=1,9
-               call intplte_emis(ifreqG(jk),&
-                    ipolG(jk)-1,dPRData%envSknTemp(i,j),&
-                    w10_out_MS(i,j),relAz,S1eiaPR(i,j),emissoutL(i,j,jk),ebar)
-            enddo
-            call intplte_emis(ifreqG(10),0,dPRData%envSknTemp(i,j),w10_out_NS(i,j),relAz,S2eiaPR(i,j),emissoutL(i,j,10),ebar)
-            call intplte_emis(ifreqG(11),1,dPRData%envSknTemp(i,j),w10_out_NS(i,j),relAz,S2eiaPR(i,j),emissoutL(i,j,11),ebar)
-!begin  WSO 10/14/15 replicate emissivities at HF
-            emissoutL(i,j,12:13)=emissoutL(i,j,10)
-!end    WSO 10/14/15
-         else if(dprRet%MS%emis(i,j,1,1,1) .gt. 0.) then
-           emissoutL(i,j,1) = sum(dprRet%MS%emis(i,j,1,1,1:nmemb1))/nmemb1
-           emissoutL(i,j,2) = sum(dprRet%MS%emis(i,j,2,1,1:nmemb1))/nmemb1
-           emissoutL(i,j,3) = sum(dprRet%MS%emis(i,j,1,2,1:nmemb1))/nmemb1
-           emissoutL(i,j,4) = sum(dprRet%MS%emis(i,j,2,2,1:nmemb1))/nmemb1
-           emissoutL(i,j,5) = sum(dprRet%MS%emis(i,j,1,3,1:nmemb1))/nmemb1
-           emissoutL(i,j,6) = sum(dprRet%MS%emis(i,j,1,4,1:nmemb1))/nmemb1
-           emissoutL(i,j,7) = sum(dprRet%MS%emis(i,j,2,4,1:nmemb1))/nmemb1
-           emissoutL(i,j,8) = sum(dprRet%MS%emis(i,j,1,5,1:nmemb1))/nmemb1
-           emissoutL(i,j,9) = sum(dprRet%MS%emis(i,j,2,5,1:nmemb1))/nmemb1
-           emissoutL(i,j,10) = sum(dprRet%MS%emis(i,j,1,6,1:nmemb1))/nmemb1
-           emissoutL(i,j,11) = sum(dprRet%MS%emis(i,j,2,6,1:nmemb1))/nmemb1
-           emissoutL(i,j,12:13) = emissoutL(i,j,10)
-           
-           emis_rms_MS(i,j,1) = sqrt(sum((dprRet%MS%emis(i,j,1,1,1:nmemb1)-emissoutL(i,j,1))**2)/nmemb1)
-           emis_rms_MS(i,j,2) = sqrt(sum((dprRet%MS%emis(i,j,2,1,1:nmemb1)-emissoutL(i,j,2))**2)/nmemb1)
-           emis_rms_MS(i,j,3) = sqrt(sum((dprRet%MS%emis(i,j,1,2,1:nmemb1)-emissoutL(i,j,3))**2)/nmemb1)
-           emis_rms_MS(i,j,4) = sqrt(sum((dprRet%MS%emis(i,j,2,2,1:nmemb1)-emissoutL(i,j,4))**2)/nmemb1)
-           emis_rms_MS(i,j,5) = sqrt(sum((dprRet%MS%emis(i,j,1,3,1:nmemb1)-emissoutL(i,j,5))**2)/nmemb1)
-           emis_rms_MS(i,j,6) = sqrt(sum((dprRet%MS%emis(i,j,1,4,1:nmemb1)-emissoutL(i,j,6))**2)/nmemb1)
-           emis_rms_MS(i,j,7) = sqrt(sum((dprRet%MS%emis(i,j,2,4,1:nmemb1)-emissoutL(i,j,7))**2)/nmemb1)
-           emis_rms_MS(i,j,8) = sqrt(sum((dprRet%MS%emis(i,j,1,5,1:nmemb1)-emissoutL(i,j,8))**2)/nmemb1)
-           emis_rms_MS(i,j,9) = sqrt(sum((dprRet%MS%emis(i,j,2,5,1:nmemb1)-emissoutL(i,j,9))**2)/nmemb1)
-           emis_rms_MS(i,j,10) = sqrt(sum((dprRet%MS%emis(i,j,1,6,1:nmemb1)-emissoutL(i,j,10))**2)/nmemb1)
-           emis_rms_MS(i,j,11) = sqrt(sum((dprRet%MS%emis(i,j,2,6,1:nmemb1)-emissoutL(i,j,11))**2)/nmemb1)
-           emis_rms_MS(i,j,12:13) = emis_rms_MS(i,j,10)
-           !print '(2i5, 13F8.3)', i, j, emis_rms_MS(i,j,1:13)
-         endif
-
+      
          do k = 1, 13
            if(emissoutL(i,j,k) .gt. missing_r4) then
              emissoutL(i,j,k) = min(max(emissoutL(i,j,k), surfEmissivity_min), surfEmissivity_max)

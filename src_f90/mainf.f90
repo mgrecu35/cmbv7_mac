@@ -148,7 +148,6 @@ subroutine mainfort(jobname, f1ctmi1,f1ctmi2,f1ctmi3,                    &
   print*, ialg
   print*, f2AKu(1:i2AKu) 
   print*, f2aDPR(1:i2adpr)
-  !stop
   call readtablesLiang2(nmu,nmfreq)         !This option reads in Liang's mu=2 table
   !call readtablesDSDWG(nmu,nmfreq) !Replaces Liang's DSD table with DSD working group relationships (rain only)
   
@@ -187,7 +186,7 @@ subroutine mainfort(jobname, f1ctmi1,f1ctmi2,f1ctmi3,                    &
   call readdmnw()
 
 !  SFM  start  11/18/2013
-  nMemb=50
+  nMemb=5
 !  SFM  end    11/18/2013
   ifdpr(1:1)='N'
   
@@ -230,8 +229,8 @@ subroutine mainfort(jobname, f1ctmi1,f1ctmi2,f1ctmi3,                    &
          endif
       endif
   ENDIF
-  print*, 'opened output file'
-
+  !print*, 'opened output file'
+  !stop
 !  SFM  start  04/10/2014  guarantee metadata on early exit
 !.Look for Cases of Bad 2Aku
   IF (st_2aku .LT. 0) THEN
@@ -728,7 +727,7 @@ subroutine do_chunkx(i,ialg, idir)
   print*, 'iConus=',iconus,'****',dprData%xlon(1,24),dprData%xlat(1,24)
   IF (i .EQ. 1) PRINT *,'File read status 2ADPR : ',st_2adpr
   print*, dPRData%n1c21, st_2akuenv
-  
+  st_2akuenv=-1
   IF (st_2akuenv .GE. 0) THEN
      st_2akuenv = readenvx(jobnamec, ialg, f2AkuENVc(1:i2AkuENVc), &
           dPRData%n1c21,    &

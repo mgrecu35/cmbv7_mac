@@ -79,12 +79,12 @@ int main(int argc, char *argv[])
 	    do_chunk_(&i,&one,&idir);
 	  icL=i*300;
 	  printf("iConus=%i\n",iConus);
-	  iConus=0;
+	  //iConus=0;
 	  if(iConus==1)
 	    {
 	      printf("GMIretsub\n");
 	      //gmiretsub_(&icL, &i, &orbNumb, &ialg, &idir, &st_GMITMI2_c);
-	      printf("Calling radarretsub2\n");
+	      /*printf("Calling radarretsub2\n");*/
 	      radarretsub2_(&nmu,  &nmfreq,   &icL, tbRgrid,  
 			    dprrain, &i, &orbNumb, &ialg, &idir);
 	      printf("Calling radarretsub3\n");
@@ -94,8 +94,10 @@ int main(int argc, char *argv[])
 		{
 		  int nscans_c;
 		  printf("Calling radarretsub4_fs() \n");
+		  
 		  radarretsub4_fs_(&nmu,  &nmfreq,   &icL, tbRgrid,  
 				   dprrain, &i, &orbNumb, &ialg, &idir, &nscans_c);
+		  
 		  int j=0;
 		  /*for(j=0;j<nscans_c;j++)
 		    writescan_fs_300_(&j);*/
