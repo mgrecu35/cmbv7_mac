@@ -15,8 +15,8 @@
 #---Compilers
 CC = gcc -fPIC -g
 CPP=g++ -fPIC -g
-F90=gfortran -fPIC -O2 -ffree-line-length-none
-F77=gfortran -fPIC -O2  
+F90=gfortran -fPIC -O2 -ffree-line-length-none -g
+F77=gfortran -fPIC -O2  -g
 
 OPENMPF = -fopenmp
 OPENMPG = -fopenmp
@@ -92,7 +92,7 @@ OBJEXE	=    $(OBJ)  mainf.o mainf_t.o
 
 #---Link and create Executable
 combAlg2.exe:	$(OBJEXE) 
-		g++ -o \
+		g++ -g -o \
 		combAlg2.exe \
 		$(OBJEXE)  $(LIB) $(LIBES) -lxml2 -lc -lflann -lgfortran -lgomp
 
@@ -180,7 +180,7 @@ rteModule.o:	src_f90/rteModule.f90
 		$(F90) -c  -O2 src_f90/rteModule.f90 
 
 armadillo_funcs.o:
-		g++ -c -fPIC -DARMA_DONT_USE_WRAPPER -I./armadillo-9.400.3/include src_c/armadillo_funcs.cpp
+		g++ -c -g -fPIC -DARMA_DONT_USE_WRAPPER -I./armadillo-9.400.3/include src_c/armadillo_funcs.cpp
 
 rainDisc.o:	rainDisc.f90 
 		$(F90) -c  -O2 rainDisc.f90 
@@ -372,16 +372,16 @@ mie3.o:		RadarOnly/Mie/mie3.f90
 		$(F90) $(FOPTS) RadarOnly/Mie/mie3.f90	
 
 ensFilter.o:	src_c/ensFilter.cc src_c/typedef.h
-		g++ -c  -D$(CPP_SWITCH)  $(C++FLAGS)  \
+		g++ -c -g  -D$(CPP_SWITCH)  $(C++FLAGS)  \
 		src_c/ensFilter.cc
 
 clearSky.o:	RadarOnly/clearSky.cc RadarOnly/typedef.h
-		$(CPP) -c -D$(CPP_SWITCH)  $(C++FLAGS) $(OPENMPC) \
+		$(CPP) -c -g -D$(CPP_SWITCH)  $(C++FLAGS) $(OPENMPC) \
 		RadarOnly/clearSky.cc
 
 #  SFM  start  06/16/2014 - added for M.Grecu
 fModelFortran.NUBF.o:	src_c/fModelFortran.NUBF.cc 
-		g++ -c -D$(CPP_SWITCH) $(C++FLAGS) \
+		g++ -c -g -D$(CPP_SWITCH) $(C++FLAGS) \
 		src_c/fModelFortran.NUBF.cc
 
 fModelFortranCv.o:	RadarOnly/fModelFortranCv.cc 
