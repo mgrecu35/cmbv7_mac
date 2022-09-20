@@ -6,13 +6,17 @@
 #include <stdio.h>
 
 #ifdef GFOR 
-extern int  __nbinmod_MOD_nbin;
+extern "C" int  __nbinmod_MOD_nbin;
+extern "C" int __nbinmod_MOD_iensrun;
+#define iEnsRun __nbinmod_MOD_iensrun
 #define nbins __nbinmod_MOD_nbin
 #endif
 
 #ifdef IFORT 
 extern int nbinmod_mp_nbin_;
+extern int nbinmod_mp_iensrun_;
 #define nbins nbinmod_mp_nbin_
+#define iEnsRun nbinmod_mp_iensrun_
 #endif
 
 //begin  MG 10/29/15 include appA
@@ -28,7 +32,7 @@ int min1(int i1, int i2)
 }
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
-extern "C" void fhb11_(float *z13,float *z35,float *z13obs,
+extern "C" void fhb11_(float *z13,float *z35,float *z13obs, float *z35obs,
 		       float *pia13,float *pia35,int *ic,int *jc,
 		       float *z35mod,float *pwc,float *n0w,float *dr,int *node,
 		       int *isurf, int *imu,int *ngates,int *nmfreqm,
@@ -36,12 +40,13 @@ extern "C" void fhb11_(float *z13,float *z35,float *z13obs,
 		       float *rrate, float *d0, float *hfreez, float *pia13srt, 
 		       int *imemb);
 
-extern "C" void fhb12_(float *z13,float *z35,float *z13obs,
-		       float *pia13,float *pia35,int *ic,int *jc,
+extern "C" void fhb12_(float *z13,float *z35,float *z13obs,float *z35obs,
+		       float *pia13,float *pia35,
 		       float *z35mod,float *pwc,float *n0w,float *dr,int *node,
 		       int *isurf, int *imu,int *ngates,int *nmfreqm,
 		       float *hh,int *itype,float *kext,float *salb,float *asym,
 		       float *rrate, float *d0, float *hfreez, float *pia13srt);
+
 
 extern "C" float ran_mod_mp_normal2_(float *nm, float *nstd); 
 
@@ -115,7 +120,7 @@ float *log10dN   : vector, returns retrieved log10(N0/N0ref)
   int iLev, i, i1, i2, node[5];
   float att1,att351,dndum,z351;
   float fi, fi1, log10dNPi, f, ntot;
-  float atm_extKav,cld_extKav,att35,att13,z13obsP[88];
+  float atm_extKav,cld_extKav,att35,att13,z13obsP[88],z35obsP[88];
   int nSub=7;
 //  SFM  begin  07/01/2014; for M.Grecu  random sequences
 //  float xs[15];
@@ -164,7 +169,8 @@ float *log10dN   : vector, returns retrieved log10(N0/N0ref)
   //  exit(0);
   for(i=0;i<ngates;i++)
     {
-      log10dN[i]=-99.9;
+      if(iEnsRun==0)
+	log10dN[i]=-99.9;
       d0[i]=0;
       rrate[i]=0;
       z13obsP[i]=-99;
@@ -195,8 +201,10 @@ float *log10dN   : vector, returns retrieved log10(N0/N0ref)
 	{
 	  f=(iLev-nodeP[i]+0.)/(nodeP[i+1]-nodeP[i]+0.01);
 	  if(f>1) f=1;
-	  log10dNPi=(1-f)*(log10dNP[i]+fi)+f*(log10dNP[i+1]+fi1);
-
+	  if(iEnsRun==0)
+	    log10dNPi=(1-f)*(log10dNP[i]+fi)+f*(log10dNP[i+1]+fi1);
+	  else
+	    log10dNPi=(1-f)*(log10dNP[i]+fi)+f*(log10dNP[i+1]+fi1)+log10dN[iLev];
 // **************** crash site
 //printf("   A fModelFortran: %i %i %i %12.6f  \n",nbins,ngates,nNodes,delta);
 //printf("   B fModelFortran: %i %i %i %i      \n",i,nodeP[i],nodeP[i+1],iLev);
@@ -272,7 +280,8 @@ float *log10dN   : vector, returns retrieved log10(N0/N0ref)
 //  SFM  begin  06/22/2014; for M.Grecu  (unknown justification)
 //  SFM  begin  07/01/2014; for M.Grecu  random sequences
 //  SFM  begin  08/13/2014; for M.Grecu   "long orbit" correction
-	  z13obsP[j]= z13obs[j]+xs[i];
+	  z13obsP[j]= z13obs[j]+0*xs[i];
+	  z35obsP[j]= z35obs[j]+0*xs[i];
 //  SFM  end    08/13/2014
 //  SFM  end    07/01/2014
 	  if(z13obsP[j]>50)
@@ -280,11 +289,16 @@ float *log10dN   : vector, returns retrieved log10(N0/N0ref)
 //  SFM  end    06/22/2014
 	}
       //printf("before fhb11\n");
-      fhb11_(z13,z35,z13obsP,
+      fhb11_(z13,z35,z13obsP,z35obsP,
 	     pia13M,pia35M,&ic,&jc,z35mod,pwc,log10dN, 
 	     &dr,node,&isurf,imuv,
 	     &ngates,&nmfreq,hh,&itype,kext,salb,asym,
 	     rrate,d0,hfreez, pia13srt,imemb);
+      /*fhb12_(z13,z35,z13obsP,z35obsP,
+	     pia13M,pia35M,z35mod,pwc,log10dN, 
+	     &dr,node,&isurf,imuv,
+	     &ngates,&nmfreq,hh,&itype,kext,salb,asym,
+	     rrate,d0,hfreez, pia13srt);*/
       //printf("but not after\n");
 //  SFM  begin  07/29/2014; for M.Grecu  to eliminate NANs
       if(isnan(*pia35M))

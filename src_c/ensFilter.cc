@@ -8,21 +8,26 @@
 #ifdef GFOR 
 #define ran1() __ran_mod_MOD_ran1()
 //#define ran1() __ran_mod__ran1()
+#define iMemb __nbinmod_MOD_imemb
+#define iEnsRun __nbinmod_MOD_iensrun
+//#define nbins __nbinmod_MOD_nbin
 #endif
 
 
 #ifdef IFORT 
 #define ran1() ran_mod_mp_ran1_()
+#define iMemb nbinmod_mp_imemb_
+#define iEnsRun nbinmod_mp_iensrun_
+//#define nbins nbinmod_mp_nbin_
 #endif
 
 #ifdef IFORT 
 
-#define iMemb __nbinmod_MOD_imemb
+
 #endif
 
-extern int iMemb;
-#define nbins __nbinmod_MOD_nbin
-extern int nbins;
+extern "C" int iEnsRun;
+//extern int nbins;
 float Dm[60],NwSt[60],NwCv[60];
 
 
@@ -58,10 +63,7 @@ void printrefprof()
 
 }
 
-#ifdef GFOR 
-#define iMemb __nbinmod_MOD_imemb
-//#define ran1() __ran_mod__ran1()
-#endif
+
 void filterZ(float *zku, int node5[5])
 {
   int i, j;
@@ -387,7 +389,7 @@ extern "C" void ensradretstcvku_( radarDataType   *radarData,
     **asym;        // pointer to vector, fortran 2-d array, 
                    // contains the asymmetry factor profile   
  
- 
+  
 
   int nNodes;      // integer, number of points that define the parametrized logNw profile
   float **logdNw;  // pointer to vector, this is a vector of vectors 
@@ -544,7 +546,7 @@ extern "C" void ensradretstcvku_( radarDataType   *radarData,
 
   if(stormStruct->rainType!=2 || radarData->hfreez<0.1)
     {
-      for(j=0;j<5;j++)
+      for(j=0;j<=5;j++)
 	{
 	  float logdnm=0;
 	  for(i=0;i<radarRet->nMemb;i++)
@@ -597,15 +599,31 @@ extern "C" void ensradretstcvku_( radarDataType   *radarData,
        }
     }
 
+   for(j=0;j<6;j++)
+     {
+       float logdnm=0;
+       for(i=0;i<radarRet->nMemb;i++)
+	 logdnm+=logdNw[i][j];
+       logdnm/=radarRet->nMemb;
+       //printf("%g ",logdnm);
+       for(i=0;i<radarRet->nMemb;i++)
+	 logdNw[i][j]=0.25*(logdNw[i][j]-logdnm);
+       
+     }
+   //   printf(" <-Nw \n");
+
+
   for(i=0;i<radarData->ngates;i++)
     radarData->hh[i]=(nbins-i)*radarData->dr*cos(*localZAngle/180.*3.1415);
   //nodeP[4]+=1;
   float nstdA=0.125;
   // printf("before runEns");
+  iEnsRun=0;
   runEns(radarData, stormStruct,retParam, nmu,radarRet, 
 	 xscalev, randemiss, localZAngle, wfractPix, ichunk, 
 	 xs, logdNw,kext,asym,salb,rsurf,dz, imuv, nodeP, 
 	 nNodes,nstdA);
+  iEnsRun=1;
   //  printf("but not after\n");
   float dm=0,rsfcMean;
   for( imemb=0;imemb<radarRet->nMemb;imemb++)
@@ -633,42 +651,52 @@ extern "C" void ensradretstcvku_( radarDataType   *radarData,
       else
       nstdA=0.125;
       for(i=0;i<radarRet->nMemb;i++)
-	for(j=0;j<9;j++)
+	for(j=6;j<9;j++)
 	  {
 	    float dmN=radarRet->d0[i*radarData->ngates+nodeP[j]];
 	    if(dmN>0.5)
 	      {
-		logdNw[i][j]-=xnudg*0.15*(dmN-1.5);
+		//logdNw[i][j]-=xnudg*0.15*(dmN-1.5);
+		logdNw[i][j]=-xnudg*0.15*(dmN-1.5);
 		int i0dm=(int)((dmN-0.5)/0.04);
 		if(i0dm<0)
 		  i0dm=0;
 		if(i0dm>59)
 		  i0dm=59;
-		logdNw[i][j]+=xnudg*0.2*(NwSt[i0dm]-logdNw[i][j]);
+		//logdNw[i][j]+=xnudg*0.2*(NwSt[i0dm]-logdNw[i][j]);
+		logdNw[i][j]=xnudg*0.2*(NwSt[i0dm]-logdNw[i][j]);
 	      }
 	    if(dm>0.5)
 	      {
-		logdNw[i][j]-=xnudg*0.15*(dm-1.5);
+		//logdNw[i][j]-=xnudg*0.15*(dm-1.5);
+		logdNw[i][j]=-xnudg*0.15*(dm-1.5);
 		int i0dm=(int)((dm-0.5)/0.04);
 		if(i0dm<0)
 		  i0dm=0;
 		if(i0dm>59)
 		  i0dm=59;
-		logdNw[i][j]+=xnudg*0.2*(NwSt[i0dm]-logdNw[i][j]);
+		//logdNw[i][j]+=xnudg*0.2*(NwSt[i0dm]-logdNw[i][j]);
+		logdNw[i][j]=+xnudg*0.2*(NwSt[i0dm]-logdNw[i][j]);
 	      }
-	    logdNw[i][j]+=0.2; //previously 0.2
+	    //logdNw[i][j]+=0.2; //previously 0.2
+	    logdNw[i][j]=+0.2; //previously 0.2
 	    if(*wfractPix>10)
-	      logdNw[i][j]+=0.1; //previously 0.0
+	      //logdNw[i][j]+=0.1; //previously 0.0
+	      logdNw[i][j]=+0.1; //previously 0.0
 	    int dnode=stormStruct->nodes[2]-stormStruct->nodes[0];
-	    //if(dnode>=8 && dnode<28)
-	    //  logdNw[i][j]-=0.2;
+	    /*
+	      if(dnode>=8 && dnode<28)
+	      //  logdNw[i][j]-=0.2;
+	      logdNw[i][j]=-0.2;
+	    */
 	  }
       if(*wfractPix>50 && nstdA>0.139)
 	nstdA*=1;
-      runEns(radarData, stormStruct,retParam, nmu,radarRet, 
-	     xscalev, randemiss, localZAngle, wfractPix, ichunk, 
-	     xs, logdNw,kext,asym,salb,rsurf,dz, imuv, nodeP, 
-	     nNodes,nstdA);
+      if(iEnsRun==1)
+	runEns(radarData, stormStruct,retParam, nmu,radarRet, 
+	       xscalev, randemiss, localZAngle, wfractPix, ichunk, 
+	       xs, logdNw,kext,asym,salb,rsurf,dz, imuv, nodeP, 
+	       nNodes,nstdA);
     }
   int iopt=2;  
   if(stormStruct->rainType==2 && dm>0.5)
@@ -677,7 +705,7 @@ extern "C" void ensradretstcvku_( radarDataType   *radarData,
 	{
 	  float cdN=0.56826200674023877-0.6907993*dm;
 	  for(i=0;i<radarRet->nMemb;i++)
-	    for(j=0;j<9;j++)
+	    for(j=6;j<9;j++)
 	      {
 		int i0dm=(int)((dm-0.5)/0.04);
 		if(i0dm<0)
@@ -686,7 +714,8 @@ extern "C" void ensradretstcvku_( radarDataType   *radarData,
 		  i0dm=59;
 		if(stormStruct->rainType==2 && dm>0.5)
 		  {
-		    logdNw[i][j]+=0.2*(cdN-logdNw[i][j]);
+		    //logdNw[i][j]+=0.2*(cdN-logdNw[i][j]);
+		    logdNw[i][j]=+0.2*(cdN-logdNw[i][j]);
 		  }
 		//if(stormStruct->rainType==1 && dm>0.5)
 		//	logdNw[i][j]-=0.5;
@@ -701,12 +730,13 @@ extern "C" void ensradretstcvku_( radarDataType   *radarData,
       else
 	{
 	  for(i=0;i<radarRet->nMemb;i++)
-	    for(j=0;j<9;j++)
+	    for(j=6;j<9;j++)
 	      {
 		float dmN=radarRet->d0[i*radarData->ngates+nodeP[j]];
 		if(dmN>0.5)
 		  {
-		    logdNw[i][j]-=0.1*xnudg*(dmN-1.5);
+		    //logdNw[i][j]-=0.1*xnudg*(dmN-1.5);
+		    logdNw[i][j]=-0.1*xnudg*(dmN-1.5);
 		    int i0dm=(int)((dmN-0.5)/0.04);
 		    if(i0dm<0)
 		      i0dm=0;
@@ -715,11 +745,13 @@ extern "C" void ensradretstcvku_( radarDataType   *radarData,
 		    float fdm=1;
 		    if(dm>1.5)
 		      fdm=1+1.5*(dm-1.5);
-		    logdNw[i][j]+=0.2*xnudg/fdm*(NwSt[i0dm]-logdNw[i][j]);
+		    //logdNw[i][j]+=0.2*xnudg/fdm*(NwSt[i0dm]-logdNw[i][j]);
+		    logdNw[i][j]=+0.2*xnudg/fdm*(NwSt[i0dm]-logdNw[i][j]);
 		  }
 		if(dm>0.5)
 		  {
-		    logdNw[i][j]-=0.2*xnudg*(dm-1.5);
+		    //logdNw[i][j]-=0.2*xnudg*(dm-1.5);
+		    logdNw[i][j]=-0.2*xnudg*(dm-1.5);
 		    int i0dm=(int)((dm-0.5)/0.04);
 		    if(i0dm<0)
 		      i0dm=0;
@@ -728,21 +760,26 @@ extern "C" void ensradretstcvku_( radarDataType   *radarData,
 		    float fdm=1;
 		    if(dm>1.5)
 		      fdm=1+1.5*(dm-1.5);
-		    logdNw[i][j]+=0.15*xnudg/fdm*(NwSt[i0dm]-logdNw[i][j]);
+		    //logdNw[i][j]+=0.15*xnudg/fdm*(NwSt[i0dm]-logdNw[i][j]);
+		    logdNw[i][j]=-0.15*xnudg/fdm*(NwSt[i0dm]-logdNw[i][j]);
 		  }
 		int dnode=stormStruct->nodes[2]-stormStruct->nodes[0];
-		logdNw[i][j]+=0.205; //previously 0.6
+		//logdNw[i][j]+=0.205; //previously 0.6
+		logdNw[i][j]=+0.205; //previously 0.6
 		if(stormStruct->nodes[0]<50)
 		  {
 		    float dns=(50-stormStruct->nodes[0])/10.0;
 		    if(dns>2.0)
 		      dns=2.0;
-		    logdNw[i][j]+=0.1*dns;
+		    //logdNw[i][j]+=0.1*dns;
+		    logdNw[i][j]=+0.1*dns;
 		  }
 		if(dnode>=10 && dnode<28)
-		  logdNw[i][j]-=0.05;
+		  //logdNw[i][j]-=0.05;
+		  logdNw[i][j]=-0.05;
 		if(dnode<4)
-		  logdNw[i][j]+=0.05;
+		  //logdNw[i][j]+=0.05;
+		  logdNw[i][j]=+0.05;
 	      }
 	  if(rsfcMean>15)
 	    {
@@ -753,10 +790,11 @@ extern "C" void ensradretstcvku_( radarDataType   *radarData,
 	}
       if(*wfractPix>50 && nstdA>0.139)
 	nstdA*=1.0;
-      runEns(radarData, stormStruct,retParam, nmu,radarRet, 
-	     xscalev, randemiss, localZAngle, wfractPix, ichunk, 
-	     xs, logdNw,kext,asym,salb,rsurf,dz, imuv, nodeP, 
-	     nNodes,nstdA);
+      if(iEnsRun==1)
+	runEns(radarData, stormStruct,retParam, nmu,radarRet, 
+	       xscalev, randemiss, localZAngle, wfractPix, ichunk, 
+	       xs, logdNw,kext,asym,salb,rsurf,dz, imuv, nodeP, 
+	       nNodes,nstdA);
     }
        
   float genv_mp_wvext;
@@ -1005,13 +1043,13 @@ void runEns(radarDataType   *radarData,
   float pia35M0,pia13M0,delta;
   int i,iNode,j;
 
-  for( imemb=0;imemb<-radarRet->nMemb;imemb++)
+  /*for( imemb=0;imemb<-radarRet->nMemb;imemb++)
     {
       for(j=0;j<9; j++)
 	printf("%7.4f ",logdNw[imemb][j]);
       printf("imemb=%i\n",imemb);
     }
-
+  */
 #pragma omp parallel for default (shared) private(imemb,delta,i,pia35M0,pia13M0)
   for( imemb=0;imemb<radarRet->nMemb;imemb++)
     {
