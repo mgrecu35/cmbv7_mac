@@ -100,11 +100,12 @@ subroutine fhb11(z13,z35,z13obs,z35obs,&
      do i=node(1),min(node(2),node(5))
         if(z13obs(i)>12 .and. z35obs(i)>12) then
            call call_keras21(z13obs(i),z35obs(i),nw1,iwc1,dm1)
+           !nw1=0
            call bisection2(d013TableS2(1:253,3),253,1.25*dm1,ibin)
-           dnw_ku=(z13obs(i)-z13tables2(ibin,3))/10.0
-           dnw_ka=(z35obs(i)-z35tables2(ibin,3))/10.0
-           log10dNw(i)=0.125*log10dNw(i)+(w1*dnw_ku+(1-w1)*dnw_ka)
-           logdn_snow=w1*dnw_ku+(1-w1)*dnw_ka
+           !dnw_ku=(z13obs(i)-z13tables2(ibin,3))/10.0
+           !dnw_ka=(z35obs(i)-z35tables2(ibin,3))/10.0
+           log10dNw(i)=log10(nw1/0.08)!0.125*log10dNw(i)+(w1*dnw_ku+(1-w1)*dnw_ka)
+           logdn_snow=log10(nw1/0.08)!w1*dnw_ku+(1-w1)*dnw_ka
            node_snow=i
         endif
      enddo
@@ -388,19 +389,19 @@ w1=0.25
 if(iEnsRun.eq.0) then
    do i=node(1),min(node(2),node(5))
       if(z13obs(i)>12 .and. z35obs(i)>12) then
-         call call_keras21(z13obs(i),z35obs(i),nw1,iwc1,dm1)
+         call call_keras2(z13obs(i),z35obs(i),nw1,iwc1,dm1)
          call bisection2(d013TableS2(1:253,3),253,1.25*dm1,ibin)
          dnw_ku=(z13obs(i)-z13tables2(ibin,3))/10.0
          dnw_ka=(z35obs(i)-z35tables2(ibin,3))/10.0
          !print*, z13obs(i), z35obs(i), dm1, iwc1, log10(nw1/0.08e8), (w1*dnw_ku+(1-w1)*dnw_ka)
-         log10dNw(i)=log10dNw(i)+(w1*dnw_ku+(1-w1)*dnw_ka)
-         logdn_snow=w1*dnw_ku+(1-w1)*dnw_ka
+         log10dNw(i)=log10(nw1/0.08)
+         logdn_snow=log10(nw1/0.08)
          node_snow=i
       endif
    enddo
    do i=node(2)+1,min(node(4)-1,node(5))
       fact=(node(4)-i)/(node(4)-node(2)+0.001)
-      print*, 'fact=',fact
+      !print*, 'fact=',fact
       !log10dNw(i)=log10dNw(i)+fact*logdn_snow
    enddo
 endif
